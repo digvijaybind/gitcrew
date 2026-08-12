@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # gitcrew — one-command dev runner
 set -e
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 PORT="${PORT:-4173}"
 PIDFILE="server/.pid"

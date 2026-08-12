@@ -233,8 +233,9 @@ function onEvent(ev) {
       if (ev.state === "running") $("#done-banner").classList.add("hidden");
       break;
     case "phase":
-      state.phases[ev.id] = ev.status === "start" ? "active" : "done";
+      state.phases[ev.id] = ev.status === "start" ? "active" : ev.status === "error" ? "error" : "done";
       if (ev.status === "start") renderPhaseStart(ev);
+      else if (ev.status === "error") renderPhaseError(ev);
       else renderPhaseEnd(ev);
       renderPhaseStrip();
       renderRoster();
@@ -319,6 +320,17 @@ function renderPhaseEnd(ev) {
   if (d) {
     d.dataset.state = "done";
     $(".fp-status", d).textContent = "✓ done";
+  }
+  const bubble = state.streaming;
+  if (bubble && bubble.phase === ev.id) finalizeStream({ phase: ev.id, agent: ev.agent });
+}
+
+function renderPhaseError(ev) {
+  const divs = $$("#feed-inner .feed-phase[data-state='active']");
+  const d = divs[divs.length - 1];
+  if (d) {
+    d.dataset.state = "error";
+    $(".fp-status", d).textContent = "✕ failed";
   }
   const bubble = state.streaming;
   if (bubble && bubble.phase === ev.id) finalizeStream({ phase: ev.id, agent: ev.agent });
@@ -438,7 +450,7 @@ function renderRoster() {
     info.appendChild(el("b", "", role.name));
     info.appendChild(el("span", "", role.title));
     item.appendChild(info);
-    item.appendChild(el("span", "rt", st === "done" ? "✓" : st === "active" ? "●" : ""));
+    item.appendChild(el("span", "rt", st === "done" ? "✓" : st === "active" ? "●" : st === "error" ? "✕" : ""));
     box.appendChild(item);
   });
 }
@@ -450,7 +462,7 @@ function renderChecklist() {
     const st = state.phases[p.id] || "pending";
     const c = el("div", "chk", "");
     c.dataset.state = st;
-    c.appendChild(el("span", "box", st === "done" ? "✓" : ""));
+    c.appendChild(el("span", "box", st === "done" ? "✓" : st === "error" ? "✕" : ""));
     c.appendChild(el("span", "", p.label));
     box.appendChild(c);
   });
@@ -614,16 +626,97 @@ function setTab(t) {
 }
 
 /* ── settings ── */
+let settingsCatalog = [];
+
 async function openSettings() {
   $("#settings-modal").classList.remove("hidden");
   try {
     const r = await fetch("/api/settings");
     const d = await r.json();
-    $("#set-provider").value = d.provider || "openai";
-    $("#set-model").value = d.model || "gpt-4o-mini";
+    settingsCatalog = d.catalog || [];
+    buildModelSelect();
+    $("#set-fallback").checked = d.fallback !== false;
+    const sel = settingsCatalog.find((m) => m.key === d.modelKey);
+    if (sel) {
+      $("#set-modelkey").value = d.modelKey;
+      showCustom(false);
+      $("#modelkey-hint").textContent = sel.note || "";
+    } else if (d.baseUrl) {
+      $("#set-modelkey").value = "__custom";
+      $("#set-baseurl").value = d.baseUrl || "";
+      $("#set-model").value = d.model || "";
+      showCustom(true);
+      $("#modelkey-hint").textContent = "custom endpoint";
+    }
     $("#set-key").value = "";
-    $("#settings-status").textContent = d.keys && d.keys[d.provider] ? "key saved (hidden)" : "no key saved for " + (d.provider || "openai");
+    $("#settings-status").textContent = d.keys && d.keys.local ? "key saved (hidden)" : "";
   } catch { /* ignore */ }
+}
+
+function buildModelSelect() {
+  const sel = $("#set-modelkey");
+  sel.innerHTML = "";
+  const groups = new Map();
+  settingsCatalog.forEach((m) => {
+    const label = m.host === "localhost" ? "Local" : m.host;
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label).push(m);
+  });
+  const opt = (key, label) => { const o = el("option", "", label); o.value = key; return o; };
+  for (const [host, models] of groups) {
+    const og = document.createElement("optgroup");
+    og.label = host;
+    models.forEach((m) => og.appendChild(opt(m.key, m.name + "  ·  " + m.grade + " · ~" + m.latency + "s")));
+    sel.appendChild(og);
+  }
+  sel.appendChild(opt("__custom", "Custom endpoint…"));
+  sel.addEventListener("change", () => {
+    const custom = sel.value === "__custom";
+    showCustom(custom);
+    $("#modelkey-hint").textContent = custom ? "" : (settingsCatalog.find((m) => m.key === sel.value)?.note || "");
+  });
+}
+
+function showCustom(on) {
+  ["#set-baseurl-field", "#set-custom-model-field", "#set-key-field"].forEach((s) => {
+    $(s).classList.toggle("hidden", !on);
+  });
+}
+
+function bindSettings() {
+  $$(".mini-pill").forEach((b) =>
+    b.addEventListener("click", () => { $("#set-baseurl").value = b.dataset.base; })
+  );
+  $("#settings-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const modelKey = $("#set-modelkey").value;
+    const fallback = $("#set-fallback").checked;
+    const body = { fallback };
+    if (modelKey === "__custom") {
+      const baseUrl = $("#set-baseurl").value.trim();
+      if (!baseUrl) {
+        $("#settings-status").textContent = "custom endpoint needs a base URL — pick a preset or paste one";
+        return;
+      }
+      body.provider = "custom";
+      body.model = $("#set-model").value.trim() || "model";
+      body.baseUrl = baseUrl;
+      const key = $("#set-key").value.trim();
+      if (key) body.key = key;
+    } else {
+      body.modelKey = modelKey;
+    }
+    try {
+      const r = await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!r.ok) throw new Error("save failed");
+      const sel = settingsCatalog.find((m) => m.key === modelKey);
+      $("#settings-status").textContent = "saved ✓ live crews run on " + (sel ? sel.name : "custom endpoint") +
+        (fallback ? " · fallback on" : " · fallback off");
+      $("#set-key").value = "";
+    } catch (err) {
+      $("#settings-status").textContent = "error: " + err.message;
+    }
+  });
 }
 
 /* ── misc ── */
@@ -639,21 +732,7 @@ function bindStatic() {
   $("#modal-close").addEventListener("click", () => $("#settings-modal").classList.add("hidden"));
   $("#settings-cancel").addEventListener("click", () => $("#settings-modal").classList.add("hidden"));
   $("#settings-modal").addEventListener("click", (e) => { if (e.target.id === "settings-modal") e.target.classList.add("hidden"); });
-  $("#settings-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const body = { provider: $("#set-provider").value, model: $("#set-model").value.trim() };
-    const key = $("#set-key").value.trim();
-    if (key) body.key = key;
-    try {
-      const r = await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!r.ok) throw new Error("save failed");
-      $("#settings-status").textContent = key ? "saved ✓ key stored server-side" : "saved ✓";
-      $("#set-key").value = "";
-    } catch (err) {
-      $("#settings-status").textContent = "error: " + err.message;
-    }
-  });
-
+  bindSettings();
   $("#ws-back").addEventListener("click", () => {
     if (sseController) sseController.abort();
     switchView("landing");

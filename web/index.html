@@ -258,24 +258,42 @@
     <p class="modal-p">Used by live-mode agents. Keys are stored server-side only and injected into the GitAgent SDK runtime. Rehearsal mode never needs a key.</p>
     <form id="settings-form">
       <div class="field">
-        <span class="field-label">Provider</span>
-        <select id="set-provider">
-          <option value="openai">OpenAI</option>
-          <option value="anthropic">Anthropic</option>
-          <option value="google">Google Gemini</option>
-          <option value="groq">Groq</option>
-          <option value="xai">xAI</option>
-          <option value="mistral">Mistral</option>
-        </select>
-      </div>
-      <div class="field">
         <span class="field-label">Model</span>
-        <input id="set-model" type="text" placeholder="gpt-4o-mini" />
+        <select id="set-modelkey"></select>
+        <span class="field-hint mono" id="modelkey-hint"></span>
       </div>
-      <div class="field">
-        <span class="field-label">API key</span>
+
+      <div class="field" id="set-baseurl-field">
+        <span class="field-label">Base URL <span class="mono hint">(OpenAI-compatible)</span></span>
+        <input id="set-baseurl" type="text" placeholder="https://gateway.example.com/v1" />
+        <div class="presets">
+          <button type="button" class="mini-pill" data-base="http://89.34.219.53:20128/v1">Gateway 89.34.219.53</button>
+          <button type="button" class="mini-pill" data-base="http://31.42.189.181:20128/v1">Gateway 31.42.189.181</button>
+          <button type="button" class="mini-pill" data-base="https://gateway.bizsearchuae.com/v1">Gateway bizsearchuae</button>
+        </div>
+      </div>
+
+      <div class="field" id="set-custom-model-field">
+        <span class="field-label">Model id</span>
+        <input id="set-model" type="text" placeholder="kr/qwen3-coder-next" />
+      </div>
+
+      <div class="field" id="set-key-field">
+        <span class="field-label">API key <span class="mono hint">(empty for no-auth gateways)</span></span>
         <input id="set-key" type="password" placeholder="sk-…" autocomplete="off" />
       </div>
+
+      <div class="field toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="set-fallback" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span class="toggle-label">
+            <b>Auto-fallback</b>
+            <span class="mono hint">if a model fails, the crew retries the phase on the next model in the chain</span>
+          </span>
+        </label>
+      </div>
+
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost btn-sm" id="settings-cancel">Cancel</button>
         <button type="submit" class="btn btn-primary btn-sm">Save</button>

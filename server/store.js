@@ -48,13 +48,32 @@ function list() {
     });
 }
 
+// On boot, any persisted crew still marked "running" belongs to a dead process
+// (server crash/restart). Reset it so it can be re-run instead of staying stuck.
+function sweepOrphanedRuns() {
+  let n = 0;
+  for (const item of list()) {
+    const m = loadMeta(item.id);
+    if (m && m.status === "running") {
+      m.status = "error";
+      m.phase = null;
+      saveMeta(item.id, m);
+      n++;
+    }
+  }
+  return n;
+}
+
 function loadSettings() {
   try {
     return JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
   } catch {
     return {
+      modelKey: "b-31.42.189.181/kr-haiku",
       provider: "openai",
       model: "gpt-4o-mini",
+      baseUrl: "",
+      fallback: true,
       keys: {},
     };
   }
@@ -79,6 +98,7 @@ module.exports = {
   loadMeta,
   saveMeta,
   list,
+  sweepOrphanedRuns,
   loadSettings,
   saveSettings,
   templateDir,

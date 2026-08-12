@@ -18,6 +18,7 @@ const KEY_ENV = {
   groq: "GROQ_API_KEY",
   xai: "XAI_API_KEY",
   mistral: "MISTRAL_API_KEY",
+  local: "LOCAL_API_KEY",
 };
 function applySettings(s) {
   if (s && s.keys) {
@@ -25,8 +26,24 @@ function applySettings(s) {
       if (key && !process.env[KEY_ENV[provider]]) process.env[KEY_ENV[provider]] = key;
     }
   }
+  // Custom OpenAI-compatible endpoints (benchmark gateways, Ollama, LM Studio)
+  // accept any non-empty key — ensure one exists so the OpenAI client works.
+  const usesCustomEndpoint = s && (s.modelKey || s.baseUrl);
+  if (usesCustomEndpoint) {
+    if (!process.env.OPENAI_API_KEY) process.env.OPENAI_API_KEY = s.keys?.local || "sk-gitcrew-local";
+  }
 }
 applySettings(store.loadSettings());
+const swept = store.sweepOrphanedRuns();
+if (swept > 0) console.log(`[boot] reset ${swept} orphaned running crew(s) → error`);
+
+// A disconnect or transient socket error must never take the whole server down.
+process.on("uncaughtException", (err) => {
+  console.error("[uncaught]", err && err.message || err);
+});
+process.on("unhandledRejection", (err) => {
+  console.error("[unhandledRejection]", err && err.message || err);
+});
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -148,11 +165,31 @@ const server = http.createServer(async (req, res) => {
         Connection: "keep-alive",
       });
       res.write("retry: 2000\n\n");
+      let closed = false;
+      const close = () => {
+        if (closed) return;
+        closed = true;
+        sub.unsubscribe();
+        res.end();
+      };
       const sub = crew.hub.subscribe(id, (ev) => {
-        res.write("data: " + JSON.stringify(ev) + "\n\n");
+        if (closed) return;
+        try {
+          res.write("data: " + JSON.stringify(ev) + "\n\n");
+        } catch {
+          close();
+        }
       });
-      for (const ev of sub.history) res.write("data: " + JSON.stringify(ev) + "\n\n");
-      req.on("close", sub.unsubscribe);
+      for (const ev of sub.history) {
+        if (closed) break;
+        try {
+          res.write("data: " + JSON.stringify(ev) + "\n\n");
+        } catch {
+          break;
+        }
+      }
+      res.on("error", close);
+      req.on("close", close);
       return;
     }
 
@@ -229,14 +266,18 @@ const server = http.createServer(async (req, res) => {
   if (p === "/api/settings" && req.method === "GET") {
     const s = store.loadSettings();
     const masked = { ...s, keys: Object.fromEntries(Object.entries(s.keys || {}).map(([k, v]) => [k, v ? "••••••" : ""])) };
+    masked.catalog = require("./models").CATALOG;
     return json(res, 200, masked);
   }
 
   if (p === "/api/settings" && req.method === "POST") {
     const body = await readBody(req);
     const s = store.loadSettings();
+    if (body.modelKey) s.modelKey = body.modelKey;
+    if (body.fallback !== undefined) s.fallback = !!body.fallback;
     if (body.provider) s.provider = body.provider;
     if (body.model) s.model = body.model;
+    if (body.baseUrl !== undefined) s.baseUrl = String(body.baseUrl).trim();
     if (body.key) s.keys = { ...(s.keys || {}), [body.provider || s.provider]: String(body.key).trim() };
     store.saveSettings(s);
     applySettings(s);
