@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{{TITLE}}</title>
+<meta name="description" content="{{TAGLINE}}" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="top">
+  <div class="container top-in">
+    <span class="brand">{{NAME}}</span>
+    <button class="cart-btn" id="cart-btn">Cart · <b id="cart-count">0</b></button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">{{EYEBROW}}</span>
+    <h1>{{TAGLINE}}</h1>
+    <p class="lead">{{PITCH}}</p>
+    <div class="cta">
+      <button class="btn btn-primary" data-scroll="#shop">Browse the goods</button>
+      <button class="btn btn-ghost" data-scroll="#why">Why {{NAME}}</button>
+    </div>
+  </div>
+</section>
+
+<section id="shop" class="shop">
+  <div class="container">
+    <span class="eyebrow">Shop</span>
+    <h2>Picks for you</h2>
+    <div class="grid" id="grid">
+      {{ITEMS}}
+    </div>
+  </div>
+</section>
+
+<section id="why" class="why">
+  <div class="container">
+    <span class="eyebrow">Why {{NAME}}</span>
+    <h2>Buying, but better</h2>
+    <div class="perks">
+      <div class="perk"><b>◆</b><h3>Fast</h3><p>Checkout in seconds, not forms.</p></div>
+      <div class="perk"><b>◆</b><h3>Fair</h3><p>Honest prices. No dark patterns.</p></div>
+      <div class="perk"><b>◆</b><h3>Yours</h3><p>Every order tracked, every detail clear.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="checkout" id="checkout">
+  <div class="container">
+    <span class="eyebrow">Checkout</span>
+    <h2>Almost yours</h2>
+    <p class="lead">Your cart, in one line.</p>
+    <form class="checkout-form card" id="form">
+      <div class="form-row">
+        <label>Email
+          <input type="email" name="email" placeholder="you@example.com" required />
+        </label>
+        <label>Name
+          <input type="text" name="name" placeholder="Jane Doe" required />
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Place order</button>
+        <p class="form-msg mono" id="form-msg"></p>
+      </div>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <span>{{NAME}} — {{TAGLINE}}</span>
+    <span class="mono">built by a crew · living in git</span>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

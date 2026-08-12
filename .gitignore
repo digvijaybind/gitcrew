@@ -1,0 +1,5 @@
+node_modules/
+workspaces/
+*.tgz
+server/.pid
+server/settings.json
