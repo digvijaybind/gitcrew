@@ -1,0 +1,7 @@
+version: 1
+name: product-playbook
+description: The design system and product template the engineer must follow.
+entries:
+  - path: PRODUCT_PLAYBOOK.md
+    type: markdown
+    topic: design-system

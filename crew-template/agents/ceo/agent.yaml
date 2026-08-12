@@ -1,0 +1,14 @@
+spec_version: "0.1.0"
+name: ceo
+version: 1.0.0
+description: The customer's advocate. Reads the brief, keeps the vision honest, and signs off on the build.
+model:
+  preferred: "openai:gpt-4o-mini"
+  fallback: []
+  constraints:
+    temperature: 0.6
+    max_tokens: 2048
+tools: [cli, read, write, memory]
+runtime:
+  max_turns: 12
+  timeout: 120

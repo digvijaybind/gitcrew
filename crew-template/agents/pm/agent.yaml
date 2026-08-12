@@ -1,0 +1,14 @@
+spec_version: "0.1.0"
+name: pm
+version: 1.0.0
+description: Product planner. Turns the brief into PRD.md and a checkable TASKS.md.
+model:
+  preferred: "openai:gpt-4o-mini"
+  fallback: []
+  constraints:
+    temperature: 0.6
+    max_tokens: 3072
+tools: [cli, read, write, memory]
+runtime:
+  max_turns: 14
+  timeout: 180
