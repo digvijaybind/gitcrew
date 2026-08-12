@@ -109,6 +109,17 @@ node server/index.js       # → http://localhost:4173
 For live mode, add a key in Settings (or env):
 `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, etc.
 
+## Hosting
+
+The demo is served behind a free tunnel — first browser visit shows a
+one-time "bypass tunnel reminder" interstitial (standard localtunnel
+anti-abuse), then the app loads normally. API access needs no interstitial.
+
+```bash
+scripts/dev.sh start       # run the server on :4173
+scripts/tunnel.sh start    # public URL via localtunnel (url subcommand prints it)
+```
+
 ## Product notes
 
 - The inspector shows the **live repo tree** (nested + collapsible), a
