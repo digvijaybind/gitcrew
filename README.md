@@ -12,6 +12,10 @@ the agent IS a repo. `SOUL.md`, `RULES.md`, `memory/`, `agents/`, `skills/`,
 >
 > Every product the crew ships is automatically published there — the URL is
 > always the newest build.
+>
+> The app itself is also runnable behind a public tunnel while the server is
+> up (ask the author for the current `.loca.lt` URL, or start one with
+> `scripts/tunnel.sh start`).
 
 ![workspace](docs/shots/workspace.png)
 
