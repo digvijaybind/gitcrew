@@ -3,110 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Study Buddy — Spaced Repetition Flashcards</title>
-  <meta name="description" content="A minimal, offline flashcard app with SM-2 spaced repetition. Study smarter, not harder.">
+  <title>Smart Packing Checklist — Tailored lists for any trip</title>
+  <meta name="description" content="Get a personalized packing checklist based on your destination, season, and trip length. No sign-up, no app.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="app">
-    <header class="status-bar">
-      <div class="status-inner">
-        <span id="due-count" class="status-item">0 cards due</span>
-        <span class="status-separator">·</span>
-        <span id="total-count" class="status-item">0 cards total</span>
-      </div>
-    </header>
 
-    <main>
-      <!-- Empty state -->
-      <section id="empty-state" class="empty-state">
-        <h2>No cards due yet</h2>
-        <p>Add some cards to start studying, or check back later.</p>
-        <button id="add-first-btn" class="btn btn-primary">Add your first card</button>
-      </section>
+  <!-- Hero -->
+  <section class="hero" id="hero">
+    <div class="container">
+      <h1>Pack smart.<br>Leave light.</h1>
+      <p class="hero-sub">A tailored packing checklist for your destination, season, and trip length. No sign-up. No app.</p>
+      <a href="#builder" class="btn btn-primary">Generate your list</a>
+    </div>
+  </section>
 
-      <!-- Review zone -->
-      <section id="review-zone" class="review-zone" hidden>
-        <div class="review-header">
-          <span class="review-label">Reviewing</span>
-          <span id="review-counter" class="review-counter">1 / 5</span>
+  <!-- Builder Form -->
+  <section class="section" id="builder">
+    <div class="container">
+      <span class="eyebrow">Builder</span>
+      <h2>Where are you heading?</h2>
+
+      <form id="packing-form" novalidate>
+        <!-- Destination -->
+        <div class="form-group">
+          <label for="destination">Destination</label>
+          <select id="destination" required>
+            <option value="">— Choose a destination —</option>
+            <option value="bangkok">🇹🇭 Bangkok, Thailand</option>
+            <option value="tokyo">🇯🇵 Tokyo, Japan</option>
+            <option value="paris">🇫🇷 Paris, France</option>
+            <option value="newyork">🇺🇸 New York, USA</option>
+            <option value="london">🇬🇧 London, UK</option>
+            <option value="sydney">🇦🇺 Sydney, Australia</option>
+            <option value="cairo">🇪🇬 Cairo, Egypt</option>
+            <option value="mumbai">🇮🇳 Mumbai, India</option>
+            <option value="dubai">🇦🇪 Dubai, UAE</option>
+            <option value="capetown">🇿🇦 Cape Town, South Africa</option>
+            <option value="reykjavik">🇮🇸 Reykjavík, Iceland</option>
+            <option value="cancun">🇲🇽 Cancún, Mexico</option>
+          </select>
         </div>
 
-        <!-- Card -->
-        <div id="card-container" class="card-container" role="button" tabindex="0" aria-label="Click to flip card">
-          <div id="card-inner" class="card-inner">
-            <div id="card-front" class="card-face card-front">
-              <div class="card-content">
-                <span class="card-label">Question</span>
-                <p id="card-front-text"></p>
-              </div>
-              <span class="flip-hint">Click to reveal answer</span>
-            </div>
-            <div id="card-back" class="card-face card-back">
-              <div class="card-content">
-                <span class="card-label">Answer</span>
-                <p id="card-back-text"></p>
-              </div>
-            </div>
+        <!-- Season -->
+        <div class="form-group">
+          <label>Season</label>
+          <div class="season-pills" role="radiogroup" aria-label="Season">
+            <button type="button" class="pill" data-season="winter" role="radio" aria-checked="false">❄️ Winter</button>
+            <button type="button" class="pill" data-season="spring" role="radio" aria-checked="false">🌸 Spring</button>
+            <button type="button" class="pill" data-season="summer" role="radio" aria-checked="false">☀️ Summer</button>
+            <button type="button" class="pill" data-season="fall" role="radio" aria-checked="false">🍂 Fall</button>
           </div>
+          <input type="hidden" id="season" name="season" required>
         </div>
 
-        <!-- Rating buttons (shown after flip) -->
-        <div id="rating-panel" class="rating-panel" hidden>
-          <p class="rating-prompt">How well did you recall?</p>
-          <div class="rating-buttons">
-            <button class="btn btn-rating btn-again" data-quality="0">
-              <span class="btn-label">Again</span>
-              <span class="btn-sub">Forgot</span>
-            </button>
-            <button class="btn btn-rating btn-hard" data-quality="1">
-              <span class="btn-label">Hard</span>
-              <span class="btn-sub">Remembered</span>
-            </button>
-            <button class="btn btn-rating btn-good" data-quality="2">
-              <span class="btn-label">Good</span>
-              <span class="btn-sub">Recalled</span>
-            </button>
-            <button class="btn btn-rating btn-easy" data-quality="3">
-              <span class="btn-label">Easy</span>
-              <span class="btn-sub">Instant</span>
-            </button>
+        <!-- Trip length -->
+        <div class="form-group">
+          <label>Trip length</label>
+          <div class="trip-length" role="radiogroup" aria-label="Trip length">
+            <button type="button" class="pill" data-length="short" role="radio" aria-checked="false">1–3 days</button>
+            <button type="button" class="pill" data-length="medium" role="radio" aria-checked="false">4–7 days</button>
+            <button type="button" class="pill" data-length="long" role="radio" aria-checked="false">8–14 days</button>
           </div>
+          <input type="hidden" id="trip-length" name="trip-length" required>
         </div>
 
-        <!-- Complete state -->
-        <section id="complete-state" class="complete-state" hidden>
-          <h2>🎉 All done!</h2>
-          <p>You've reviewed all cards due for today.</p>
-          <button id="add-card-btn" class="btn btn-primary">Add more cards</button>
-        </section>
-      </section>
-    </main>
-
-    <!-- Add card form -->
-    <section id="add-zone" class="add-zone">
-      <div class="add-zone-toggle">
-        <button id="toggle-form-btn" class="btn btn-ghost">+ Add card</button>
-      </div>
-
-      <form id="add-form" class="add-form" hidden>
-        <label for="card-front-input" class="form-label">Front (Question)</label>
-        <textarea id="card-front-input" class="form-input" rows="3" placeholder="e.g., What is the capital of Peru?" required></textarea>
-
-        <label for="card-back-input" class="form-label">Back (Answer)</label>
-        <textarea id="card-back-input" class="form-input" rows="3" placeholder="e.g., Lima" required></textarea>
-
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Save card</button>
-          <button type="button" id="cancel-form-btn" class="btn btn-ghost">Cancel</button>
-        </div>
-        <div id="form-feedback" class="form-feedback" hidden></div>
+        <button type="submit" class="btn btn-primary btn-block" id="generate-btn" disabled>Generate packing list</button>
       </form>
-    </section>
-  </div>
+    </div>
+  </section>
 
-  <footer>
-    <p>Study Buddy — <a href="https://www.gitagent.sh/" target="_blank" rel="noopener">built by a crew · living in git · GitAgentProtocol</a></p>
+  <!-- Results -->
+  <section class="section" id="results" style="display:none;">
+    <div class="container">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div>
+          <span class="eyebrow">Your list</span>
+          <h2 id="results-title">Packing list</h2>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-secondary" id="print-btn">🖨️ Print</button>
+          <button type="button" class="btn btn-ghost" id="start-over-btn">Start over</button>
+        </div>
+      </div>
+      <div id="items-container"></div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <span>Smart Packing Checklist</span>
+      <span class="muted">built by a crew · <a href="https://www.gitagent.sh/" target="_blank" rel="noopener">living in git</a> · GitAgentProtocol</span>
+    </div>
   </footer>
 
   <script src="app.js"></script>

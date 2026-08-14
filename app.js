@@ -1,324 +1,627 @@
-(function () {
-  "use strict";
+document.addEventListener('DOMContentLoaded', () => {
 
-  /* ── Constants ── */
-  const STORAGE_KEY = "studybuddy_cards";
-  const NEW_INTERVAL = 1; // days for brand-new cards
-  const DEFAULT_EASE = 2.5;
+  // --- State ---
+  let selectedSeason = null;
+  let selectedLength = null;
+  let checkedItems = new Set();
 
-  /* ── DOM refs ── */
-  const dueCountEl = document.getElementById("due-count");
-  const totalCountEl = document.getElementById("total-count");
-  const emptyState = document.getElementById("empty-state");
-  const reviewZone = document.getElementById("review-zone");
-  const reviewCounter = document.getElementById("review-counter");
-  const cardContainer = document.getElementById("card-container");
-  const cardInner = document.getElementById("card-inner");
-  const cardFrontText = document.getElementById("card-front-text");
-  const cardBackText = document.getElementById("card-back-text");
-  const flipHint = cardContainer.querySelector(".flip-hint");
-  const ratingPanel = document.getElementById("rating-panel");
-  const ratingButtons = document.querySelectorAll(".btn-rating");
-  const completeState = document.getElementById("complete-state");
-  const reviewLabel = document.querySelector(".review-label");
+  // --- DOM refs ---
+  const form = document.getElementById('packing-form');
+  const destSelect = document.getElementById('destination');
+  const seasonHidden = document.getElementById('season');
+  const lengthHidden = document.getElementById('trip-length');
+  const generateBtn = document.getElementById('generate-btn');
+  const resultsSection = document.getElementById('results');
+  const resultsTitle = document.getElementById('results-title');
+  const itemsContainer = document.getElementById('items-container');
+  const printBtn = document.getElementById('print-btn');
+  const startOverBtn = document.getElementById('start-over-btn');
+  const seasonPills = document.querySelectorAll('[data-season]');
+  const lengthPills = document.querySelectorAll('[data-length]');
 
-  const toggleFormBtn = document.getElementById("toggle-form-btn");
-  const addForm = document.getElementById("add-form");
-  const frontInput = document.getElementById("card-front-input");
-  const backInput = document.getElementById("card-back-input");
-  const cancelFormBtn = document.getElementById("cancel-form-btn");
-  const formFeedback = document.getElementById("form-feedback");
-  const addFirstBtn = document.getElementById("add-first-btn");
-  const addCardBtn = document.getElementById("add-card-btn");
-
-  /* ── State ── */
-  let allCards = [];
-  let dueQueue = [];
-  let currentIndex = 0;
-  let cardFlipped = false;
-
-  /* ── LocalStorage ── */
-  function loadCards() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function saveCards() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allCards));
-  }
-
-  /* ── SM-2 Engine ── */
-  function calculateNextInterval(card, quality) {
-    const { easeFactor, interval, repetitions } = card;
-    let newEase = easeFactor;
-    let newInterval = interval;
-    let newRepetitions = repetitions;
-
-    if (quality === 0) {
-      // Again: reset
-      newRepetitions = 0;
-      newInterval = NEW_INTERVAL;
-    } else {
-      // Adjust ease factor: SM-2 style
-      // newEase = ease + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
-      newEase = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-      if (newEase < 1.3) newEase = 1.3;
-
-      newRepetitions = repetitions + 1;
-
-      if (newRepetitions === 1) {
-        newInterval = NEW_INTERVAL;
-      } else if (newRepetitions === 2) {
-        newInterval = Math.max(1, Math.round(interval * 1.2));
-      } else {
-        newInterval = Math.max(1, Math.round(interval * easeFactor));
-      }
-    }
-
-    return {
-      easeFactor: parseFloat(newEase.toFixed(2)),
-      interval: newInterval,
-      repetitions: newRepetitions,
-    };
-  }
-
-  function getToday() {
-    const d = new Date();
-    return d.toISOString().slice(0, 10);
-  }
-
-  function addDays(dateStr, days) {
-    const d = new Date(dateStr + "T00:00:00Z");
-    d.setUTCDate(d.getUTCDate() + days);
-    return d.toISOString().slice(0, 10);
-  }
-
-  /* ── Card CRUD ── */
-  function createCard(front, back) {
-    return {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-      front: front.trim(),
-      back: back.trim(),
-      dueDate: getToday(),
-      interval: 0,
-      easeFactor: DEFAULT_EASE,
-      repetitions: 0,
-      createdAt: new Date().toISOString(),
-    };
-  }
-
-  function addCardToFrontend(card) {
-    allCards.push(card);
-    saveCards();
-    refreshDueQueue();
-    render();
-  }
-
-  function updateCardMetadata(cardId, updates) {
-    const card = allCards.find((c) => c.id === cardId);
-    if (!card) return;
-    Object.assign(card, updates);
-    saveCards();
-  }
-
-  /* ── Due queue ── */
-  function refreshDueQueue() {
-    const today = getToday();
-    dueQueue = allCards
-      .filter((c) => c.dueDate <= today)
-      .sort((a, b) => {
-        // New cards (interval 0) first, then by due date
-        if (a.interval === 0 && b.interval > 0) return -1;
-        if (b.interval === 0 && a.interval > 0) return 1;
-        return a.dueDate.localeCompare(b.dueDate);
-      });
-  }
-
-  /* ── UI Render ── */
-  function updateStatusBar() {
-    dueCountEl.textContent = `${dueQueue.length} card${dueQueue.length !== 1 ? "s" : ""} due`;
-    totalCountEl.textContent = `${allCards.length} card${allCards.length !== 1 ? "s" : ""} total`;
-  }
-
-  function showReviewZone() {
-    emptyState.hidden = true;
-    reviewZone.hidden = false;
-    completeState.hidden = true;
-  }
-
-  function showEmptyState() {
-    reviewZone.hidden = true;
-    emptyState.hidden = false;
-  }
-
-  function showCompleteState() {
-    reviewZone.hidden = false;
-    emptyState.hidden = true;
-    completeState.hidden = false;
-  }
-
-  function renderCard() {
-    if (currentIndex >= dueQueue.length) {
-      showCompleteState();
-      return;
-    }
-
-    const card = dueQueue[currentIndex];
-    const total = dueQueue.length;
-
-    reviewLabel.textContent = "Reviewing";
-    reviewCounter.textContent = `${currentIndex + 1} / ${total}`;
-
-    cardFrontText.textContent = card.front;
-    cardBackText.textContent = card.back;
-
-    // Reset flip state
-    cardFlipped = false;
-    cardInner.classList.remove("flipped");
-    flipHint.style.display = "";
-    ratingPanel.hidden = true;
-  }
-
-  function render() {
-    updateStatusBar();
-
-    if (dueQueue.length === 0) {
-      showEmptyState();
-      return;
-    }
-
-    showReviewZone();
-    renderCard();
-  }
-
-  /* ── Card interactions ── */
-  function flipCard() {
-    if (cardFlipped) return;
-    cardFlipped = true;
-    cardInner.classList.add("flipped");
-    flipHint.style.display = "none";
-    ratingPanel.hidden = false;
-  }
-
-  function rateCard(quality) {
-    const card = dueQueue[currentIndex];
-    const result = calculateNextInterval(card, quality);
-
-    // Calculate new due date
-    const newDueDate = addDays(card.dueDate, result.interval);
-
-    updateCardMetadata(card.id, {
-      easeFactor: result.easeFactor,
-      interval: result.interval,
-      repetitions: result.repetitions,
-      dueDate: newDueDate,
+  // --- Season pills ---
+  seasonPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      seasonPills.forEach(p => p.setAttribute('aria-checked', 'false'));
+      pill.setAttribute('aria-checked', 'true');
+      selectedSeason = pill.dataset.season;
+      seasonHidden.value = selectedSeason;
+      checkReady();
     });
+  });
 
-    // Advance to next card
-    currentIndex++;
-    refreshDueQueue();
-    renderCard();
+  // --- Length pills ---
+  lengthPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      lengthPills.forEach(p => p.setAttribute('aria-checked', 'false'));
+      pill.setAttribute('aria-checked', 'true');
+      selectedLength = pill.dataset.length;
+      lengthHidden.value = selectedLength;
+      checkReady();
+    });
+  });
+
+  // --- Check if form is ready ---
+  function checkReady() {
+    generateBtn.disabled = !(destSelect.value && selectedSeason && selectedLength);
   }
+  destSelect.addEventListener('change', checkReady);
 
-  /* ── Add card form ── */
-  function openForm() {
-    addForm.hidden = false;
-    toggleFormBtn.style.display = "none";
-    frontInput.focus();
-  }
-
-  function closeForm() {
-    addForm.hidden = true;
-    toggleFormBtn.style.display = "";
-    frontInput.value = "";
-    backInput.value = "";
-    formFeedback.hidden = true;
-  }
-
-  function submitForm(e) {
+  // --- Generate ---
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (generateBtn.disabled) return;
 
-    const front = frontInput.value.trim();
-    const back = backInput.value.trim();
-
-    if (!front || !back) {
-      formFeedback.textContent = "Both fields are required.";
-      formFeedback.style.color = "var(--danger)";
-      formFeedback.style.background = "rgba(255, 95, 110, 0.08)";
-      formFeedback.hidden = false;
-      return;
-    }
-
-    const card = createCard(front, back);
-    addCardToFrontend(card);
-
-    formFeedback.textContent = "Card saved — ready for review!";
-    formFeedback.style.color = "var(--accent2)";
-    formFeedback.style.background = "rgba(67, 217, 163, 0.08)";
-    formFeedback.hidden = false;
-
-    closeForm();
-  }
-
-  /* ── Event listeners ── */
-  cardContainer.addEventListener("click", flipCard);
-  cardContainer.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      flipCard();
-    }
+    const destination = destSelect.value;
+    const items = generateList(destination, selectedSeason, selectedLength);
+    renderResults(destination, selectedSeason, selectedLength, items);
   });
 
-  ratingButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const quality = parseInt(btn.dataset.quality, 10);
-      rateCard(quality);
-    });
+  // --- Print ---
+  printBtn.addEventListener('click', () => {
+    window.print();
   });
 
-  toggleFormBtn.addEventListener("click", openForm);
-  addFirstBtn.addEventListener("click", openForm);
-  addCardBtn.addEventListener("click", openForm);
-  cancelFormBtn.addEventListener("click", closeForm);
-  addForm.addEventListener("submit", submitForm);
+  // --- Start over ---
+  startOverBtn.addEventListener('click', () => {
+    resultsSection.style.display = 'none';
+    checkedItems.clear();
+    selectedSeason = null;
+    selectedLength = null;
+    seasonHidden.value = '';
+    lengthHidden.value = '';
+    destSelect.value = '';
+    seasonPills.forEach(p => p.setAttribute('aria-checked', 'false'));
+    lengthPills.forEach(p => p.setAttribute('aria-checked', 'false'));
+    generateBtn.disabled = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 
-  /* ── Keyboard shortcuts (only when form not focused) ── */
-  document.addEventListener("keydown", (e) => {
-    // Don't trigger shortcuts when typing in inputs
-    if (
-      document.activeElement === frontInput ||
-      document.activeElement === backInput
-    )
-      return;
+  // --- Data ---
+  const destinations = {
+    bangkok: { name: 'Bangkok', country: 'Thailand', flag: '🇹🇭' },
+    tokyo: { name: 'Tokyo', country: 'Japan', flag: '🇯🇵' },
+    paris: { name: 'Paris', country: 'France', flag: '🇫🇷' },
+    newyork: { name: 'New York', country: 'USA', flag: '🇺🇸' },
+    london: { name: 'London', country: 'UK', flag: '🇬🇧' },
+    sydney: { name: 'Sydney', country: 'Australia', flag: '🇦🇺' },
+    cairo: { name: 'Cairo', country: 'Egypt', flag: '🇪🇬' },
+    mumbai: { name: 'Mumbai', country: 'India', flag: '🇮🇳' },
+    dubai: { name: 'Dubai', country: 'UAE', flag: '🇦🇪' },
+    capetown: { name: 'Cape Town', country: 'South Africa', flag: '🇿🇦' },
+    reykjavik: { name: 'Reykjavík', country: 'Iceland', flag: '🇮🇸' },
+    cancun: { name: 'Cancún', country: 'Mexico', flag: '🇲🇽' }
+  };
 
-    if (cardFlipped && dueQueue.length > 0 && currentIndex < dueQueue.length) {
-      switch (e.key) {
-        case "1":
-        case "a":
-          rateCard(0);
-          break;
-        case "2":
-        case "h":
-          rateCard(1);
-          break;
-        case "3":
-        case "g":
-          rateCard(2);
-          break;
-        case "4":
-        case "e":
-          rateCard(3);
-          break;
+  const itemSets = {
+    // --- Bangkok ---
+    bangkok: {
+      winter: {
+        clothing: ['Lightweight t-shirts (4)', 'Light long-sleeve shirt', 'Light jacket or cardigan', 'Shorts', 'Comfortable walking shoes', 'Sandals', 'Light sweater for evenings', 'Underwear & socks'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm with SPF', 'Hand sanitizer', 'Aloe vera gel', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/C/G)', 'Waterproof phone pouch'],
+        documents: ['Passport', 'Hotel confirmation', 'Travel insurance card', 'Flight itinerary'],
+        misc: ['Reusable water bottle', 'Small umbrella or poncho', 'Tote bag for day trips', 'Hand fan']
+      },
+      spring: {
+        clothing: ['Lightweight t-shirts (5)', 'Short-sleeve shirts', 'Light shorts', 'Light trousers', 'Comfortable walking shoes', 'Sandals', 'Light jacket for malls/AC', 'Underwear & socks'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm with SPF', 'Hand sanitizer', 'Moisturizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/C/G)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Travel insurance card', 'Flight itinerary'],
+        misc: ['Reusable water bottle', 'Small umbrella', 'Tote bag', 'Hand fan']
+      },
+      summer: {
+        clothing: ['Lightweight t-shirts (6)', 'Tank tops', 'Shorts', 'Lightweight trousers', 'Breathable walking shoes', 'Sandals', 'Swimwear', 'Hat/cap', 'Underwear & socks'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'After-sun aloe gel', 'Lip balm with SPF', 'Hand sanitizer', 'Electrolyte packets'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/C/G)', 'Waterproof phone pouch'],
+        documents: ['Passport', 'Hotel confirmation', 'Travel insurance card', 'Flight itinerary'],
+        misc: ['Reusable water bottle', 'Small umbrella/poncho', 'Tote bag', 'Hand fan', 'Rechargeable fan']
+      },
+      fall: {
+        clothing: ['Lightweight t-shirts (4)', 'Light long-sleeve shirt', 'Light jacket or cardigan', 'Shorts', 'Comfortable walking shoes', 'Sandals', 'Underwear & socks'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm with SPF', 'Hand sanitizer', 'Aloe vera gel', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/C/G)', 'Waterproof phone pouch'],
+        documents: ['Passport', 'Hotel confirmation', 'Travel insurance card', 'Flight itinerary'],
+        misc: ['Reusable water bottle', 'Small umbrella or poncho', 'Tote bag for day trips', 'Hand fan']
+      }
+    },
+
+    // --- Tokyo ---
+    tokyo: {
+      winter: {
+        clothing: ['Warm t-shirts (3)', 'Thermal base layer', 'Fleece or mid-layer', 'Warm coat', 'Jeans or warm trousers', 'Comfortable walking shoes', 'Warm socks', 'Scarf & gloves', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Hand cream', 'Hand sanitizer', 'Lipstick/balm', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A)', 'Camera', 'Portable heater'],
+        documents: ['Passport', 'Hotel confirmation', 'JR Pass (if applicable)', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Wrist wallet', 'Tote bag']
+      },
+      spring: {
+        clothing: ['Light jackets (2)', 'Long-sleeve shirts', 'T-shirts (3)', 'Jeans', 'Comfortable walking shoes', 'Light scarf', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'JR Pass (if applicable)', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Daypack', 'Hand warmers']
+      },
+      summer: {
+        clothing: ['T-shirts (6)', 'Light short-sleeve shirts', 'Shorts', 'Light trousers', 'Breathable walking shoes', 'Sandals', 'Light jacket for AC', 'Underwear & socks'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Hand sanitizer', 'Moisturizer', 'Small towel', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'JR Pass (if applicable)', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable water bottle', 'Daypack', 'Hand fan']
+      },
+      fall: {
+        clothing: ['Light jackets (2)', 'Long-sleeve shirts', 'T-shirts (3)', 'Jeans', 'Comfortable walking shoes', 'Light scarf', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'JR Pass (if applicable)', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Daypack', 'Hand warmers']
+      }
+    },
+
+    // --- Paris ---
+    paris: {
+      winter: {
+        clothing: ['T-shirts (3)', 'Turtleneck or warm top', 'Wool sweater', 'Warm coat', 'Jeans', 'Comfortable walking shoes', 'Warm socks', 'Scarf & gloves', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Hand cream', 'Hand sanitizer', 'Lipstick/balm'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/E)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Tote bag', 'Hand warmers']
+      },
+      spring: {
+        clothing: ['Light jacket', 'Long-sleeve shirts', 'T-shirts (3)', 'Jeans or trousers', 'Comfortable walking shoes', 'Light scarf', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/E)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Daypack']
+      },
+      summer: {
+        clothing: ['T-shirts (5)', 'Light dresses or shirts', 'Light trousers or shorts', 'Comfortable walking shoes', 'Sandals', 'Light jacket for evenings', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Hand sanitizer', 'Moisturizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/E)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Small crossbody bag', 'Reusable shopping bag', 'Daypack']
+      },
+      fall: {
+        clothing: ['Light jacket', 'Long-sleeve shirts', 'T-shirts (3)', 'Jeans', 'Comfortable walking shoes', 'Scarf', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/E)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Daypack']
+      }
+    },
+
+    // --- New York ---
+    newyork: {
+      winter: {
+        clothing: ['T-shirts (3)', 'Thermal base layer', 'Fleece or sweater', 'Warm winter coat', 'Jeans', 'Comfortable walking shoes', 'Warm socks', 'Scarf, gloves & beanie', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Hand cream', 'Hand sanitizer', 'Lipstick/balm'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/B)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Tote bag', 'Hand warmers']
+      },
+      spring: {
+        clothing: ['Light jacket', 'Long-sleeve shirts', 'T-shirts (3)', 'Jeans', 'Comfortable walking shoes', 'Light scarf', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/B)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Daypack']
+      },
+      summer: {
+        clothing: ['T-shirts (5)', 'Short-sleeve shirts', 'Shorts or light trousers', 'Comfortable walking shoes', 'Sandals', 'Light jacket for evenings', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Deodorant', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/B)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Small crossbody bag', 'Reusable water bottle', 'Daypack']
+      },
+      fall: {
+        clothing: ['Light jacket', 'Long-sleeve shirts', 'T-shirts (3)', 'Jeans', 'Comfortable walking shoes', 'Scarf', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/B)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Daypack']
+      }
+    },
+
+    // --- London ---
+    london: {
+      winter: {
+        clothing: ['T-shirts (3)', 'Warm sweater', 'Fleece or mid-layer', 'Waterproof coat', 'Jeans', 'Waterproof walking shoes', 'Warm socks', 'Scarf, gloves & hat', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Hand cream', 'Hand sanitizer', 'Lipstick/balm'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type G)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Tote bag', 'Hand warmers']
+      },
+      spring: {
+        clothing: ['Waterproof jacket', 'Long-sleeve shirts', 'T-shirts (3)', 'Jeans or trousers', 'Waterproof walking shoes', 'Light scarf', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type G)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Daypack']
+      },
+      summer: {
+        clothing: ['T-shirts (5)', 'Light jackets (2)', 'Light trousers or shorts', 'Comfortable walking shoes', 'Sandals', 'Light waterproof layer', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Hand sanitizer', 'Moisturizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type G)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Daypack']
+      },
+      fall: {
+        clothing: ['Waterproof jacket', 'Long-sleeve shirts', 'T-shirts (3)', 'Jeans', 'Waterproof walking shoes', 'Scarf', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type G)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Compact umbrella', 'Reusable shopping bag', 'Daypack']
+      }
+    },
+
+    // --- Sydney ---
+    sydney: {
+      winter: {
+        clothing: ['T-shirts (3)', 'Long-sleeve shirt', 'Light sweater', 'Light jacket', 'Jeans or trousers', 'Comfortable walking shoes', 'Sandals', 'Underwear & socks'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm with SPF', 'Hand sanitizer', 'Moisturizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type I)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear']
+      },
+      spring: {
+        clothing: ['T-shirts (4)', 'Short-sleeve shirts', 'Shorts', 'Light trousers', 'Comfortable walking shoes', 'Sandals', 'Swimwear', 'Hat', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm with SPF', 'Hand sanitizer', 'Moisturizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type I)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear']
+      },
+      summer: {
+        clothing: ['T-shirts (6)', 'Tank tops', 'Shorts', 'Light trousers', 'Breathable walking shoes', 'Sandals', 'Swimwear', 'Hat/cap', 'Light jacket for evenings', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm with SPF', 'Aloe vera gel', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type I)', 'Camera', 'GoPro/action cam'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear', 'Beach towel']
+      },
+      fall: {
+        clothing: ['T-shirts (3)', 'Long-sleeve shirt', 'Light sweater', 'Light jacket', 'Jeans or trousers', 'Comfortable walking shoes', 'Sandals', 'Underwear & socks'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm with SPF', 'Hand sanitizer', 'Moisturizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type I)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear']
+      }
+    },
+
+    // --- Cairo ---
+    cairo: {
+      winter: {
+        clothing: ['T-shirts (4)', 'Long-sleeve shirt', 'Light jacket', 'Light trousers', 'Comfortable walking shoes', 'Scarf', 'Underwear & socks'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Moisturizer', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/E)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Buff/scarf for dust']
+      },
+      spring: {
+        clothing: ['T-shirts (5)', 'Light trousers', 'Light jacket', 'Comfortable walking shoes', 'Hat', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Moisturizer', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/E)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Buff/scarf for dust']
+      },
+      summer: {
+        clothing: ['Lightweight t-shirts (6)', 'Light trousers', 'Light jacket for mosques/AC', 'Comfortable walking shoes', 'Hat', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Moisturizer', 'Hand sanitizer', 'Tweezers', 'Electrolyte packets'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/E)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Buff/scarf for dust']
+      },
+      fall: {
+        clothing: ['T-shirts (4)', 'Long-sleeve shirt', 'Light jacket', 'Light trousers', 'Comfortable walking shoes', 'Underwear & socks'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Moisturizer', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/E)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Buff/scarf for dust']
+      }
+    },
+
+    // --- Mumbai ---
+    mumbai: {
+      winter: {
+        clothing: ['T-shirts (5)', 'Light shirts', 'Light trousers', 'Comfortable walking shoes', 'Sandals', 'Light jacket for evenings', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm', 'Hand sanitizer', 'Oral rehydration salts', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/D/M)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Small towel']
+      },
+      spring: {
+        clothing: ['T-shirts (6)', 'Light shirts', 'Light trousers or shorts', 'Comfortable walking shoes', 'Sandals', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm', 'Hand sanitizer', 'Oral rehydration salts', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/D/M)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Small towel']
+      },
+      summer: {
+        clothing: ['T-shirts (7)', 'Light shirts', 'Light trousers or shorts', 'Breathable walking shoes', 'Sandals', 'Hat', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm', 'Hand sanitizer', 'Oral rehydration salts', 'Electrolyte packets', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/D/M)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Small towel', 'Hand fan']
+      },
+      fall: {
+        clothing: ['T-shirts (5)', 'Light shirts', 'Light trousers', 'Comfortable walking shoes', 'Sandals', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm', 'Hand sanitizer', 'Oral rehydration salts', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/D/M)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Small towel']
+      }
+    },
+
+    // --- Dubai ---
+    dubai: {
+      winter: {
+        clothing: ['T-shirts (4)', 'Short-sleeve shirts', 'Light trousers', 'Light jacket for evenings/AC', 'Comfortable walking shoes', 'Sandals', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Moisturizer', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type G/C)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear', 'Cover-up for mosque']
+      },
+      spring: {
+        clothing: ['T-shirts (5)', 'Short-sleeve shirts', 'Light trousers', 'Light jacket for AC', 'Comfortable walking shoes', 'Sandals', 'Hat', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Moisturizer', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type G/C)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear', 'Cover-up for mosque']
+      },
+      summer: {
+        clothing: ['Lightweight t-shirts (7)', 'Light trousers', 'Light jacket for heavy AC', 'Comfortable walking shoes', 'Sandals', 'Hat', 'Swimwear', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Aloe vera gel', 'Hand sanitizer', 'Tweezers', 'Electrolyte packets'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type G/C)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear', 'Cover-up for mosque', 'Rechargeable fan']
+      },
+      fall: {
+        clothing: ['T-shirts (4)', 'Short-sleeve shirts', 'Light trousers', 'Light jacket for evenings/AC', 'Comfortable walking shoes', 'Sandals', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Moisturizer', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type G/C)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear', 'Cover-up for mosque']
+      }
+    },
+
+    // --- Cape Town ---
+    capetown: {
+      winter: {
+        clothing: ['T-shirts (3)', 'Long-sleeve shirt', 'Warm sweater', 'Waterproof jacket', 'Jeans or trousers', 'Waterproof walking shoes', 'Warm socks', 'Scarf & gloves', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Hand cream', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type S/D/M)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Daypack', 'Sunglasses', 'Reusable water bottle']
+      },
+      spring: {
+        clothing: ['T-shirts (4)', 'Short-sleeve shirts', 'Light jacket', 'Light trousers or shorts', 'Comfortable walking shoes', 'Sandals', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Hand sanitizer', 'Moisturizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type S/D/M)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Daypack', 'Sunglasses', 'Reusable water bottle']
+      },
+      summer: {
+        clothing: ['T-shirts (6)', 'Tank tops', 'Shorts', 'Light trousers', 'Comfortable walking shoes', 'Sandals', 'Swimwear', 'Hat/cap', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm with SPF', 'Insect repellent', 'Hand sanitizer', 'Aloe vera gel', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type S/D/M)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Daypack', 'Sunglasses', 'Reusable water bottle', 'Swimwear', 'Beach towel']
+      },
+      fall: {
+        clothing: ['T-shirts (3)', 'Long-sleeve shirt', 'Warm sweater', 'Light waterproof jacket', 'Jeans or trousers', 'Comfortable walking shoes', 'Underwear & socks'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type S/D/M)', 'Camera'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Daypack', 'Sunglasses', 'Reusable water bottle']
+      }
+    },
+
+    // --- Reykjavík ---
+    reykjavik: {
+      winter: {
+        clothing: ['Thermal base layers (3)', 'Wool sweaters (2)', 'Fleece mid-layer', 'Waterproof winter coat', 'Waterproof trousers', 'Warm boots', 'Thermal socks (5 pairs)', 'Hat, gloves & neck warmer', 'Underwear'],
+        toiletries: ['Moisturizer (heavy duty)', 'Lip balm', 'Hand cream', 'Hand sanitizer', 'Lipstick/balm'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/F)', 'Camera', 'Headlamp'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Swimsuit (hot pools!)', 'Reusable water bottle', 'Daypack', 'Hand warmers', 'Sunglasses']
+      },
+      spring: {
+        clothing: ['T-shirts (3)', 'Fleece or sweater', 'Light waterproof jacket', 'Jeans', 'Waterproof walking shoes', 'Warm socks', 'Scarf', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Hand cream', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/F)', 'Camera', 'Headlamp'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Swimsuit (hot pools!)', 'Reusable water bottle', 'Daypack', 'Hand warmers']
+      },
+      summer: {
+        clothing: ['T-shirts (4)', 'Light long-sleeve shirts', 'Light fleece', 'Waterproof jacket', 'Light trousers', 'Waterproof walking shoes', 'Light socks', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Moisturizer', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/F)', 'Camera', 'Headlamp'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Swimsuit (hot pools!)', 'Reusable water bottle', 'Daypack', 'Sunglasses']
+      },
+      fall: {
+        clothing: ['T-shirts (3)', 'Fleece or sweater', 'Light waterproof jacket', 'Jeans or trousers', 'Waterproof walking shoes', 'Warm socks', 'Scarf', 'Underwear'],
+        toiletries: ['Moisturizer', 'Lip balm', 'Hand cream', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type C/F)', 'Camera', 'Headlamp'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Swimsuit (hot pools!)', 'Reusable water bottle', 'Daypack', 'Hand warmers']
+      }
+    },
+
+    // --- Cancún ---
+    cancun: {
+      winter: {
+        clothing: ['T-shirts (4)', 'Short-sleeve shirts', 'Shorts', 'Light trousers', 'Comfortable walking shoes', 'Sandals', 'Swimwear', 'Light jacket for evenings', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm with SPF', 'Aloe vera gel', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/B)', 'Camera', 'Waterproof phone pouch'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear', 'Beach towel']
+      },
+      spring: {
+        clothing: ['T-shirts (5)', 'Tank tops', 'Shorts', 'Light trousers', 'Comfortable walking shoes', 'Sandals', 'Swimwear', 'Hat/cap', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm with SPF', 'Aloe vera gel', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/B)', 'Camera', 'Waterproof phone pouch'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear', 'Beach towel']
+      },
+      summer: {
+        clothing: ['T-shirts (7)', 'Tank tops', 'Shorts', 'Light trousers', 'Breathable walking shoes', 'Sandals', 'Swimwear', 'Hat/cap', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm with SPF', 'Aloe vera gel', 'Hand sanitizer', 'Electrolyte packets', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/B)', 'Camera', 'Waterproof phone pouch'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear', 'Beach towel']
+      },
+      fall: {
+        clothing: ['T-shirts (5)', 'Short-sleeve shirts', 'Shorts', 'Light trousers', 'Comfortable walking shoes', 'Sandals', 'Swimwear', 'Hat/cap', 'Underwear'],
+        toiletries: ['Sunscreen (SPF 50+)', 'Insect repellent', 'Lip balm with SPF', 'Aloe vera gel', 'Hand sanitizer', 'Tweezers'],
+        electronics: ['Phone + charger', 'Power bank', 'Universal adapter (Type A/B)', 'Camera', 'Waterproof phone pouch'],
+        documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+        misc: ['Reusable water bottle', 'Daypack', 'Sunglasses', 'Swimwear', 'Beach towel']
       }
     }
-  });
+  };
 
-  /* ── Init ── */
-  allCards = loadCards();
-  refreshDueQueue();
-  render();
-})();
+  // --- Fallback for unknown destinations ---
+  const fallback = {
+    winter: {
+      clothing: ['T-shirts (3)', 'Long-sleeve shirts', 'Warm sweater or fleece', 'Warm coat', 'Jeans or trousers', 'Comfortable walking shoes', 'Warm socks', 'Scarf & gloves', 'Underwear'],
+      toiletries: ['Moisturizer', 'Lip balm', 'Hand cream', 'Hand sanitizer', 'Tweezers'],
+      electronics: ['Phone + charger', 'Power bank', 'Universal adapter', 'Camera'],
+      documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+      misc: ['Compact umbrella', 'Reusable water bottle', 'Daypack', 'Hand warmers']
+    },
+    spring: {
+      clothing: ['T-shirts (4)', 'Light jacket', 'Long-sleeve shirts', 'Jeans or trousers', 'Comfortable walking shoes', 'Light scarf', 'Underwear'],
+      toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+      electronics: ['Phone + charger', 'Power bank', 'Universal adapter', 'Camera'],
+      documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+      misc: ['Compact umbrella', 'Reusable water bottle', 'Daypack']
+    },
+    summer: {
+      clothing: ['T-shirts (5)', 'Short-sleeve shirts', 'Shorts', 'Light trousers', 'Comfortable walking shoes', 'Sandals', 'Hat/cap', 'Underwear'],
+      toiletries: ['Sunscreen (SPF 50+)', 'Lip balm', 'Hand sanitizer', 'Moisturizer', 'Tweezers'],
+      electronics: ['Phone + charger', 'Power bank', 'Universal adapter', 'Camera'],
+      documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+      misc: ['Reusable water bottle', 'Daypack', 'Sunglasses']
+    },
+    fall: {
+      clothing: ['T-shirts (3)', 'Long-sleeve shirts', 'Warm sweater', 'Light jacket', 'Jeans or trousers', 'Comfortable walking shoes', 'Underwear & socks'],
+      toiletries: ['Moisturizer', 'Lip balm', 'Sunscreen (SPF 30+)', 'Hand sanitizer', 'Tweezers'],
+      electronics: ['Phone + charger', 'Power bank', 'Universal adapter', 'Camera'],
+      documents: ['Passport', 'Hotel confirmation', 'Flight itinerary', 'Travel insurance card'],
+      misc: ['Compact umbrella', 'Reusable water bottle', 'Daypack']
+    }
+  };
+
+  // --- Generate list ---
+  function generateList(destination, season, length) {
+    const dest = itemSets[destination] || fallback;
+    const seasonItems = dest[season] || dest.summer;
+    const items = {};
+
+    const categories = ['clothing', 'toiletries', 'electronics', 'documents', 'misc'];
+    const categoryLabels = {
+      clothing: '👕 Clothing',
+      toiletries: '🧴 Toiletries & Health',
+      electronics: '📱 Electronics',
+      documents: '📄 Documents & Money',
+      misc: '🎒 Misc / Gear'
+    };
+
+    categories.forEach(cat => {
+      const rawItems = seasonItems[cat];
+      let count = rawItems.length;
+
+      // Scale items by trip length
+      if (length === 'short') {
+        count = Math.max(1, Math.ceil(count * 0.6));
+      } else if (length === 'long') {
+        count = Math.min(rawItems.length, Math.ceil(count * 1.3));
+      }
+
+      items[cat] = { label: categoryLabels[cat], items: rawItems.slice(0, count) };
+    });
+
+    return items;
+  }
+
+  // --- Render results ---
+  function renderResults(destination, season, length, items) {
+    const destInfo = destinations[destination];
+    if (!destInfo) return;
+
+    // Update title
+    resultsTitle.textContent = `${destInfo.flag} ${destInfo.name} — ${season.charAt(0).toUpperCase() + season.slice(1)} pack list`;
+
+    // Count totals
+    let totalItems = 0;
+    let totalCategories = 0;
+    Object.keys(items).forEach(cat => {
+      totalCategories++;
+      totalItems += items[cat].items.length;
+    });
+
+    // Build HTML
+    let html = '';
+
+    // Progress bar
+    html += `
+      <div class="progress-container" id="progress-container">
+        <div class="progress-label">
+          <span>Packing progress</span>
+          <span id="progress-count">0 / ${totalItems} checked</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    `;
+
+    // Categories
+    const order = ['clothing', 'toiletries', 'electronics', 'documents', 'misc'];
+    order.forEach(cat => {
+      if (!items[cat]) return;
+      html += `<div class="category">`;
+      html += `<div class="category-title">${items[cat].label}</div>`;
+      html += `<ul class="checklist">`;
+      items[cat].items.forEach((item, i) => {
+        const id = `${cat}-${i}`;
+        html += `
+          <li>
+            <div class="checklist-item">
+              <input type="checkbox" id="${id}" data-cat="${cat}" data-index="${i}">
+              <label for="${id}">${item}</label>
+            </div>
+          </li>`;
+      });
+      html += `</ul></div>`;
+    });
+
+    itemsContainer.innerHTML = html;
+
+    // Show results
+    resultsSection.style.display = 'block';
+
+    // Attach checkbox listeners
+    document.querySelectorAll('.checklist-item input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', updateProgress);
+    });
+
+    // Scroll to results
+    setTimeout(() => {
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+
+  // --- Update progress ---
+  function updateProgress() {
+    const allCheckboxes = document.querySelectorAll('.checklist-item input[type="checkbox"]');
+    let checked = 0;
+    allCheckboxes.forEach(cb => {
+      if (cb.checked) checked++;
+    });
+    const total = allCheckboxes.length;
+    const fill = document.getElementById('progress-fill');
+    const count = document.getElementById('progress-count');
+    if (fill) fill.style.width = `${(checked / total) * 100}%`;
+    if (count) count.textContent = `${checked} / ${total} checked`;
+  }
+});
