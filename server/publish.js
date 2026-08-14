@@ -1,23 +1,68 @@
 // gitcrew — publish the latest built product to the live GitHub Pages site.
 // Called automatically by crew.js when a run finishes (mode-independent).
 // The gh-pages branch lives in a worktree at <root>/site-live; this module
-// syncs the newest "done" product's app/ (or full repo if no app/) into it,
-// commits, and pushes. Pushing uses whatever git credentials are configured
-// (Credential Manager / gh auth) — no token is stored in the repo.
+// syncs the newest product's app/ (or full repo if no app/) into it, commits,
+// and pushes. All git calls are async with a hard timeout so a slow/hung push
+// can never block the server's event loop.
 
 const fs = require("fs");
 const path = require("path");
-const { execFileSync } = require("child_process");
+const { execFile } = require("child_process");
 const store = require("./store");
 
 const SITE_DIR = path.join(store.ROOT, "site-live");
 const BRANCH = "gh-pages";
+const TIMEOUT_MS = 30000;
 
-function sh(args, cwd) {
-  return execFileSync("git", args, {
-    cwd,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
+function sh(args, cwd, env) {
+  return new Promise((resolve, reject) => {
+    execFile(
+      "git",
+      args,
+      {
+        cwd,
+        encoding: "utf8",
+        timeout: TIMEOUT_MS,
+        killSignal: "SIGKILL",
+        maxBuffer: 10 * 1024 * 1024,
+        env: { ...process.env, GIT_TERMINAL_PROMPT: "0", ...(env || {}) },
+      },
+      (err, stdout) => {
+        if (err) {
+          const msg = String((err && err.message) || err);
+          reject(new Error(msg + (stdout ? " :: " + stdout.trim() : "")));
+          return;
+        }
+        resolve((stdout || "").trim());
+      }
+    );
+  });
+}
+
+// git push spawns git-remote-https which inherits stdout/stderr pipes; with
+// default execFile stdio the child keeps the pipes open after git exits, so
+// the promise never resolves. Detach all stdio for pushes (we only need the
+// exit code + timeout). Auth via token URL when available. Note: do NOT set
+// GIT_TERMINAL_PROMPT=0 here — it makes Git Credential Manager bail out
+// instead of using stored creds, hanging the push on Windows.
+function shPush(args, cwd, env) {
+  return new Promise((resolve, reject) => {
+    execFile(
+      "git",
+      args,
+      {
+        cwd,
+        timeout: TIMEOUT_MS,
+        killSignal: "SIGKILL",
+        detached: true,
+        stdio: ["ignore", "ignore", "ignore"],
+        env: { ...process.env, GIT_TERMINAL_PROMPT: "1", ...(env || {}) },
+      },
+      (err) => {
+        if (err) reject(new Error(String((err && err.message) || err)));
+        else resolve();
+      }
+    );
   });
 }
 
@@ -27,6 +72,15 @@ function latestDoneCrew() {
     .filter((m) => m.status === "done")
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   return done[0] || null;
+}
+
+// Accept an explicit crew (from the just-finished run) or fall back to the
+// newest done crew. Called right after a run finishes, before status flips to
+// "done" — so the caller passes its own meta to guarantee THIS product ships.
+function pickCrew(crew) {
+  if (typeof crew === "string") return store.loadMeta(crew);
+  if (crew && crew.id) return store.loadMeta(crew.id) || crew;
+  return latestDoneCrew();
 }
 
 function copyDir(src, dest) {
@@ -55,27 +109,77 @@ function syncProduct(crew) {
   copyDir(src, SITE_DIR);
 }
 
-async function publish({ emit } = {}) {
+// Provision the gh-pages worktree if it doesn't exist yet. On a fresh clone
+// (no worktree, maybe no gh-pages branch) this creates it so publish can run
+// without manual setup.
+async function ensureWorktree() {
+  if (fs.existsSync(SITE_DIR) && fs.existsSync(path.join(SITE_DIR, ".git"))) return;
+  fs.rmSync(SITE_DIR, { recursive: true, force: true });
+  try {
+    // Does origin already have a gh-pages branch?
+    const refs = await sh(["ls-remote", "--heads", "origin", "gh-pages"], store.ROOT);
+    if (refs) {
+      await sh(["worktree", "add", SITE_DIR, BRANCH], store.ROOT);
+    } else {
+      await sh(["worktree", "add", "--orphan", "-B", BRANCH, SITE_DIR], store.ROOT);
+    }
+  } catch (err) {
+    throw new Error("site-live worktree setup failed: " + String(err.message || err));
+  }
+}
+
+// Push to the gh-pages branch. Auth priority:
+//   1. Token (GH_TOKEN / GITHUB_TOKEN env, or settings.ghToken) — cloud first
+//   2. Fall back to whatever git has configured (Credential Manager / gh auth),
+//      which covers the common local case where a read-only app token is set
+//      but real write credentials live in the OS credential store.
+async function pushToOrigin() {
+  const token =
+    process.env.GH_TOKEN ||
+    process.env.GITHUB_TOKEN ||
+    store.loadSettings().ghToken;
+  const remote = await sh(["remote", "get-url", "origin"], SITE_DIR);
+  if (token) {
+    const authUrl = remote.replace("https://", `https://x-access-token:${token}@`);
+    try {
+      await shPush(["push", authUrl, `HEAD:${BRANCH}`], SITE_DIR);
+      return;
+    } catch (e) {
+      if (!process.env.GH_TOKEN && !process.env.GITHUB_TOKEN) {
+        // The app-level token may be read-only; local creds can still push.
+        await shPush(["push", "origin", BRANCH], SITE_DIR);
+        return;
+      }
+      throw e;
+    }
+  }
+  await shPush(["push", "origin", BRANCH], SITE_DIR);
+}
+
+async function publish({ emit } = {}, crewOverride) {
   const emit_ = (ev) => emit && emit(ev);
-  const crew = latestDoneCrew();
+  const crew = pickCrew(crewOverride);
   if (!crew) {
     emit_({ type: "system", phase: null, agent: "publisher", subtype: "publish", content: "no completed crew to publish" });
     return { ok: false, reason: "no crew" };
   }
-  if (!fs.existsSync(SITE_DIR)) {
-    emit_({ type: "system", phase: null, agent: "publisher", subtype: "publish", content: "site-live worktree missing — run `git worktree add --orphan -B gh-pages site-live`" });
-    return { ok: false, reason: "no worktree" };
+
+  try {
+    await ensureWorktree();
+  } catch (err) {
+    emit_({ type: "system", phase: null, agent: "publisher", subtype: "publish", content: String(err.message) });
+    return { ok: false, reason: String(err.message) };
   }
 
   syncProduct(crew);
   const product = crew.product || "product";
 
   try {
-    sh(["add", "-A"], SITE_DIR);
-    const changed = sh(["status", "--porcelain"], SITE_DIR).trim();
+    await sh(["add", "-A"], SITE_DIR);
+    const changed = await sh(["status", "--porcelain"], SITE_DIR);
     if (changed) {
-      sh(["commit", "-m", `deploy: ${product} (crew ${crew.id})`], SITE_DIR);
-      sh(["push", "origin", BRANCH], SITE_DIR);
+      await sh(["commit", "-m", `deploy: ${product} (crew ${crew.id})`], SITE_DIR);
+      await pushToOrigin();
     }
   } catch (err) {
     emit_({ type: "system", phase: null, agent: "publisher", subtype: "publish", content: `publish failed: ${String(err.message || err)}` });

@@ -666,7 +666,24 @@ function showDoneBanner(ev) {
   if (id) {
     $("#done-preview").onclick = () => { setTab("preview"); loadPreview(id); };
   }
+  // Live site link — only shown when the server has GitHub publishing configured.
+  const live = $("#done-live");
+  const url = githubPagesUrl();
+  if (url) {
+    live.classList.remove("hidden");
+    live.href = url;
+    live.textContent = "Live site ↗";
+  } else {
+    live.classList.add("hidden");
+  }
   loadPreview(id);
+}
+
+function githubPagesUrl() {
+  const repo = state.settings && state.settings.ghRepo;
+  if (!repo) return null;
+  const [owner, name] = repo.split("/");
+  return "https://" + owner + ".github.io/" + name + "/";
 }
 
 function loadPreview(id) {
@@ -918,10 +935,20 @@ function bindStatic() {
 }
 
 /* ── init ── */
+async function loadSettingsEarly() {
+  try {
+    const r = await fetch("/api/settings");
+    state.settings = await r.json();
+  } catch {
+    /* non-fatal */
+  }
+}
+
 function init() {
   bindTheme();
   bindStatic();
   setupLanding();
   renderRecent();
+  loadSettingsEarly();
 }
 document.addEventListener("DOMContentLoaded", init);

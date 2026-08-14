@@ -174,7 +174,9 @@ async function runCrew(id) {
     });
 
     // Auto-publish the finished product to the live GitHub Pages site.
-    await publish({ emit });
+    // Pass the crew explicitly so THIS product ships even though meta.status
+    // is still "running" here (latestDoneCrew would skip it).
+    await publish({ emit }, meta);
 
     meta.status = "done";
     meta.phase = null;

@@ -111,9 +111,19 @@ For live mode, add a key in Settings (or env):
 
 ## Hosting
 
-The demo is served behind a free tunnel — first browser visit shows a
-one-time "bypass tunnel reminder" interstitial (standard localtunnel
-anti-abuse), then the app loads normally. API access needs no interstitial.
+Every product the crew ships is **auto-published** to the live site:
+
+> **https://digvijaybind.github.io/gitcrew/**
+
+When a run finishes, the server syncs the newest product into the `gh-pages`
+branch (via a `site-live` worktree) and pushes it — no manual steps, the live
+URL is always the latest build. Configure the repo in `server/settings.json`
+(`ghRepo`) and auth via `GH_TOKEN`/`GITHUB_TOKEN` env, `settings.ghToken`, or
+whatever git credentials are already set up on the host.
+
+The app itself can also be served behind a free tunnel for instant sharing —
+first browser visit shows a one-time "bypass tunnel reminder" interstitial
+(standard localtunnel anti-abuse), then the app loads normally:
 
 ```bash
 scripts/dev.sh start       # run the server on :4173
