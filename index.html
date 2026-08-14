@@ -3,91 +3,82 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MovieWatchlist — The simplest way to movie watchlist ratings.</title>
-<meta name="description" content="The simplest way to movie watchlist ratings." />
+<title>PersonalHabit — The simplest way to personal habit tracker.</title>
+<meta name="description" content="The simplest way to personal habit tracker." />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
-<header class="hero">
-  <div class="container">
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">PersonalHabit</div>
     <nav>
-      <span class="brand">MovieWatchlist</span>
-      <span class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#how">How it works</a>
-        <a href="#try">Try it</a>
-      </span>
+      <a class="active" href="#overview"><span>◧</span> Overview</a>
+      <a href="#metrics"><span>▤</span> Metrics</a>
+      <a href="#activity"><span>≡</span> Activity</a>
+      <a href="#settings"><span>⚙</span> Settings</a>
     </nav>
-    <div class="hero-inner fade-in">
-      <span class="eyebrow">moviewatchlist v1.0.0</span>
-      <h1>The simplest way to movie watchlist ratings.</h1>
-      <p class="lead">MovieWatchlist turns “A movie watchlist with ratings and watch status” into something you can actually use. No setup, no learning curve — open it and it works, so you can focus on the part that matters: getting real results.</p>
-      <div class="cta">
-        <button class="btn btn-primary" data-cta>Get started free</button>
-        <button class="btn btn-ghost" data-scroll="#how">See how it works</button>
+    <div class="side-foot mono">live · v1.0.0</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">personalhabit v1.0.0</span>
+        <h1>The simplest way to personal habit tracker.</h1>
       </div>
-      <p class="hint">No signup. No credit card. Ship in one sitting.</p>
-    </div>
-  </div>
-</header>
-
-<section id="features">
-  <div class="container">
-    <span class="eyebrow">Capabilities</span>
-    <h2>Everything MovieWatchlist does</h2>
-    <p class="lead">Four capabilities, one product — everything “A movie watchlist with ratings and watch status” actually needs.</p>
-    <div class="grid">
-      <div class="feature card"><span class="ico">◆</span><h3>Frictionless setup</h3><p>Open it and it works. There is no onboarding gauntlet.</p></div>
-      <div class="feature card"><span class="ico">◈</span><h3>Beautiful by default</h3><p>A dark, focused interface that stays out of your way.</p></div>
-      <div class="feature card"><span class="ico">✦</span><h3>Built to last</h3><p>Clean code, honest changelogs, and a crew that commits.</p></div>
-    </div>
-  </div>
-</section>
-
-<section id="how">
-  <div class="container">
-    <span class="eyebrow">How it works</span>
-    <h2>From thought to shipped in minutes</h2>
-    <div class="steps">
-      <div class="step"><b>1</b><h3>Tell us what you need</h3><p>One sentence is enough to get going.</p></div>
-      <div class="step"><b>2</b><h3>MovieWatchlist does the work</h3><p>The heavy lifting happens automatically, in real time.</p></div>
-      <div class="step"><b>3</b><h3>You take it from there</h3><p>Everything is yours to edit, extend, and own.</p></div>
-    </div>
-  </div>
-</section>
-
-<section id="try" class="try-section">
-  <div class="container">
-    <span class="eyebrow">Live demo</span>
-    <h2>Take MovieWatchlist for a spin</h2>
-    <p class="lead">This is a real, working widget — not a screenshot.</p>
-    <div class="demo card" id="demo">
-      <div class="demo-output">—</div>
-      <div class="demo-actions">
-        <button class="btn btn-primary" id="demo-btn">Run again</button>
-        <button class="btn btn-ghost" id="demo-reset">Reset</button>
+      <div class="top-actions">
+        <button class="btn btn-ghost" id="range-btn">Last 7 days ▾</button>
+        <button class="btn btn-primary" id="refresh-btn">Refresh</button>
       </div>
-      <p class="demo-log mono" id="demo-log">Ready.</p>
-    </div>
-  </div>
-</section>
+    </header>
 
-<section class="cta-section">
-  <div class="container">
-    <h2>Ready when you are</h2>
-    <p class="lead">MovieWatchlist turns “A movie watchlist with ratings and watch status” into something you can actually use. No setup, no learning curve — open it and it works, so you can focus on the part that matters: getting real results.</p>
-    <button class="btn btn-primary" data-cta>Start with MovieWatchlist</button>
-  </div>
-</section>
+    <section id="overview" class="cards">
+      <div class="stat card">
+        <span class="stat-label">Active now</span>
+        <span class="stat-value mono" id="s-active">—</span>
+        <span class="stat-delta up">▲ live</span>
+      </div>
+      <div class="stat card">
+        <span class="stat-label">Total events</span>
+        <span class="stat-value mono" id="s-total">0</span>
+        <span class="stat-delta">this period</span>
+      </div>
+      <div class="stat card">
+        <span class="stat-label">Avg. response</span>
+        <span class="stat-value mono" id="s-avg">0ms</span>
+        <span class="stat-delta">p95</span>
+      </div>
+      <div class="stat card">
+        <span class="stat-label">Crew status</span>
+        <span class="stat-value mono" id="s-status">idle</span>
+        <span class="stat-delta up">● healthy</span>
+      </div>
+    </section>
 
-<footer>
-  <div class="container">
-    <span>MovieWatchlist — The simplest way to movie watchlist ratings.</span>
-    <span class="mono">built by a crew · living in git</span>
-  </div>
-</footer>
+    <section id="metrics" class="chart-card card">
+      <div class="chart-head">
+        <h2>Signals</h2>
+        <span class="mono chart-note">live · updates every tick</span>
+      </div>
+      <div class="chart" id="chart" aria-hidden="true"></div>
+    </section>
 
+    <section id="activity" class="table-card card">
+      <h2>Recent activity</h2>
+      <table>
+        <thead>
+          <tr><th>Event</th><th>Source</th><th>Value</th><th>Time</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+
+    <footer>
+      <span>PersonalHabit — The simplest way to personal habit tracker.</span>
+      <span class="mono">built by a crew · living in git</span>
+    </footer>
+  </main>
+</div>
 <script src="app.js"></script>
 </body>
 </html>
