@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro Focus Timer — Distraction-free time blocks</title>
+  <meta name="description" content="A minimal Pomodoro timer that opens instantly. Focus, break, repeat. Zero dependencies, zero setup.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+
+    <!-- Hero / Timer Section -->
+    <section class="hero" id="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">Focus Timer</p>
+        <h1>Pomodoro Focus</h1>
+        <p class="tagline">Deep work in timed blocks. Zero setup, zero accounts.</p>
+
+        <!-- Session Type Toggle -->
+        <div class="session-toggle" role="radiogroup" aria-label="Session type">
+          <button class="session-btn active" data-type="focus" role="radio" aria-checked="true">Focus</button>
+          <button class="session-btn" data-type="short" role="radio" aria-checked="false">Short Break</button>
+          <button class="session-btn" data-type="long" role="radio" aria-checked="false">Long Break</button>
+        </div>
+
+        <!-- Timer Display -->
+        <div class="timer-display" id="timerDisplay" aria-live="polite">
+          <span class="timer-value" id="timerValue">25:00</span>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+          <button class="btn btn-primary" id="btnStart">Start</button>
+          <button class="btn btn-ghost" id="btnPause" style="display:none;">Pause</button>
+          <button class="btn btn-ghost" id="btnReset">Reset</button>
+        </div>
+
+        <!-- Status indicator -->
+        <p class="status" id="statusText"></p>
+      </div>
+    </section>
+
+    <!-- Daily Log Section -->
+    <section class="log-section" id="logSection">
+      <div class="log-inner">
+        <p class="eyebrow">Today's Sessions</p>
+        <h2>Activity Log</h2>
+        <div class="log-container" id="logContainer">
+          <p class="log-empty" id="logEmpty">No sessions yet. Start a focus block to begin.</p>
+        </div>
+        <button class="btn btn-ghost btn-clear" id="btnClearLog" style="display:none;">Clear Log</button>
+      </div>
+    </section>
+
+    <footer>
+      <p>Pomodoro Focus Timer &mdash; built by a crew in git</p>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
