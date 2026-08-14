@@ -8,7 +8,22 @@ Built on the [GitAgentProtocol (GAP)](https://www.gitagent.sh/) open standard:
 the agent IS a repo. `SOUL.md`, `RULES.md`, `memory/`, `agents/`, `skills/`,
 `workflows/`, `tools/`, `hooks/` — all versioned files.
 
+> **Try the live demo:** [https://digvijaybind.github.io/gitcrew/](https://digvijaybind.github.io/gitcrew/)
+>
+> Every product the crew ships is automatically published there — the URL is
+> always the newest build.
+
 ![workspace](docs/shots/workspace.png)
+
+## Screenshots
+
+| The app — launch a build | The crew at work |
+|---|---|
+| ![app landing](docs/shots/app-landing.png) | ![pipeline](docs/shots/app-pipeline.png) |
+
+| Built product (preview) | Live site (auto-published) |
+|---|---|
+| ![preview](docs/shots/app-preview.png) | ![live site](docs/shots/live-site.png) |
 
 ## What it does
 
@@ -37,7 +52,9 @@ Every commit is real: `git log` on a finished workspace tells the whole story �
   files, real commits. Perfect for instant demos.
 - **Live** — the GitAgent SDK (`query()` from `@open-gitagent/gitagent`) runs
   real LLM agents against the repo. Drop any provider key in Settings:
-  OpenAI, Anthropic, Google, Groq, xAI, Mistral.
+  OpenAI, Anthropic, Google, Groq, xAI, Mistral, or a self-hosted llama.cpp
+  endpoint (the Qwen 3.6 35B uncensored model was used to build the live
+  products hosted at the demo URL — see `server/models.js`).
 
 ## Why it's "agents as repos"
 

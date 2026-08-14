@@ -33,7 +33,7 @@ function getPrompts(template) {
     review: (idea) =>
       `You are QA. Read PRD.md, TASKS.md, and every file in the product output directory. Verify completeness, correctness (follow every interaction path), copy (no placeholders), and playbook design compliance. Write REVIEW.md with a verdict and a findings table. Fix every finding you can directly in the product (commit with "review:" prefix).`,
     ship: (idea) =>
-      `You are the marketer/shippit. Read git log, PRD.md, TASKS.md, REVIEW.md. Write README.md (pitch, run instructions, what was built, the crew, status) and CHANGELOG.md (honest Added/Fixed bullets under ## [1.0.0]). Create the annotated tag v1.0.0.${isStatic ? `\n\n**Deploy to GitHub Pages:** After tagging, push the app/ folder to the gh-pages branch:\n  git subtree push --prefix app origin gh-pages\nThis publishes the static site to https://<owner>.github.io/<repo>/` : ''}`,
+      `You are the marketer/shippit. Read git log, PRD.md, TASKS.md, REVIEW.md. Write README.md (pitch, run instructions, what was built, the crew, status) and CHANGELOG.md (honest Added/Fixed bullets under ## [1.0.0]). Create the annotated tag v1.0.0.${isStatic ? `\n\n**Deploy to GitHub Pages:** After tagging, push the app/ folder to the gh-pages branch:\n  git subtree push --prefix app origin gh-pages\nThis publishes the static site to https://<owner>.github.io/<repo>/` : ''}\n\nThe footer of every product page must credit the build stack with a line like "built by a crew · living in git · GitAgentProtocol" linking to https://www.gitagent.sh/.`,
   };
 }
 

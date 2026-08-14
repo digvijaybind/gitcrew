@@ -378,7 +378,7 @@ async function createRehearsalEngine() {
             "- Final CTA and footer",
             "",
             "## The crew",
-            "This product was planned, built, reviewed, and shipped by a crew of git-native agents living in this repo:",
+            "This product was planned, built, reviewed, and shipped by a crew of git-native agents living in this repo, using the [GitAgentProtocol](https://www.gitagent.sh/):",
             "",
             "- `agents/pm` — product planning (PRD + tasks)",
             "- `agents/engineer` — implementation in `app/`",

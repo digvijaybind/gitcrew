@@ -64,6 +64,8 @@ footer {
   border-top: 1px solid var(--line);
 }
 footer .mono { font-family: var(--mono); font-size: 0.78rem; }
+footer a { color: var(--muted); text-decoration: none; border-bottom: 1px dotted currentColor; }
+footer a:hover { color: var(--accent); }
 .fade-in { animation: fadeUp 0.7s ease both; }
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(14px); }
