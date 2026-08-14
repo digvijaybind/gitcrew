@@ -33,7 +33,27 @@ const state = {
   streaming: null, // { phase, agent, node }
   refreshTimer: null,
   refreshPending: false,
+  stepCounts: {}, // phase id -> step number (step-by-step loader)
 };
+
+const PHASE_ORDER = ["brief", "plan", "build", "review", "ship"];
+
+/* ── theme (dark / light) ── */
+function currentTheme() {
+  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+}
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("gitcrew-theme", t); } catch { /* private mode */ }
+  const meta = $("#theme-color");
+  if (meta) meta.content = t === "light" ? "#f6f7f9" : "#07090b";
+}
+function toggleTheme() {
+  applyTheme(currentTheme() === "dark" ? "light" : "dark");
+}
+function bindTheme() {
+  $$(".theme-toggle").forEach((b) => b.addEventListener("click", toggleTheme));
+}
 
 /* ── navigation ── */
 function switchView(v) {
@@ -62,6 +82,10 @@ function setupLanding() {
   );
   const speed = $("#speed");
   speed.addEventListener("input", () => { $("#speed-label").textContent = speed.value + "×"; });
+  $$("#template-chips .chip-btn").forEach((b) => b.addEventListener("click", () => {
+    $$("#template-chips .chip-btn").forEach((x) => x.classList.remove("active"));
+    b.classList.add("active");
+  }));
 
   $("#crew-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -70,6 +94,7 @@ function setupLanding() {
     idea.style.borderColor = "";
     const stack = $("#stack-chips .chip-btn.active").dataset.stack;
     const mode = $("#mode-toggle .mode-btn.active").dataset.mode;
+    const template = $("#template-chips .chip-btn.active").dataset.template;
     const speedVal = parseInt(speed.value, 10) || 2;
     const btn = $("#launch-btn");
     btn.disabled = true; btn.querySelector(".btn-label").textContent = "Deploying crew…";
@@ -77,7 +102,7 @@ function setupLanding() {
       const res = await fetch("/api/crews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea: ideaText, stack, mode, speed: mode === "rehearsal" ? speedVal : 1 }),
+        body: JSON.stringify({ idea: ideaText, stack, mode, template, speed: mode === "rehearsal" ? speedVal : 1 }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "failed to create crew");
@@ -123,7 +148,9 @@ function openWorkspace(id) {
   state.phases = {};
   state.streaming = null;
   state.file = null;
+  state.stepCounts = {};
   state.ws = { id };
+  setPipelineProgress(0);
   $("#feed").innerHTML = '<div class="feed-inner" id="feed-inner"></div>';
   $("#tree").innerHTML = ""; $("#fileview").classList.add("hidden");
   $("#gitlog").innerHTML = ""; $("#preview-frame").src = "about:blank";
@@ -246,9 +273,11 @@ function onEvent(ev) {
       streamDelta(ev);
       break;
     case "msg":
+      bumpStep(ev.phase);
       finalizeStream(ev);
       break;
     case "tool":
+      if (ev.status === "call") bumpStep(ev.phase);
       renderTool(ev);
       break;
     case "commit":
@@ -300,10 +329,32 @@ function phaseDividerNode(ev) {
   info.appendChild(el("div", "fp-name", ph.label + " phase"));
   info.appendChild(el("div", "fp-agent", "agent/" + agent));
   div.appendChild(info);
+  const spinner = el("span", "spinner fp-spinner", "");
+  spinner.setAttribute("aria-hidden", "true");
+  div.appendChild(spinner);
   const st = el("span", "fp-status", "▶ running");
   div.appendChild(st);
+  const step = el("span", "fp-step", "step 0");
+  step.setAttribute("aria-hidden", "true");
+  div.appendChild(step);
   feedInner().appendChild(div);
   return div;
+}
+
+function bumpStep(phaseId) {
+  const n = (state.stepCounts[phaseId] || 0) + 1;
+  state.stepCounts[phaseId] = n;
+  const divs = $$("#feed-inner .feed-phase");
+  const d = divs[divs.length - 1];
+  const pill = d && $(".fp-step", d);
+  if (pill) pill.textContent = "step " + n;
+}
+
+function setPipelineProgress(doneCount) {
+  const fill = $("#pipeline-fill");
+  if (fill) fill.style.width = (doneCount / PHASE_ORDER.length) * 100 + "%";
+  const label = $("#pipeline-label");
+  if (label) label.textContent = doneCount + " / " + PHASE_ORDER.length + " phases";
 }
 
 function initialsOf(name) {
@@ -319,7 +370,7 @@ function renderPhaseEnd(ev) {
   const d = divs[divs.length - 1];
   if (d) {
     d.dataset.state = "done";
-    $(".fp-status", d).textContent = "✓ done";
+    $(".fp-status", d).textContent = "done";
   }
   const bubble = state.streaming;
   if (bubble && bubble.phase === ev.id) finalizeStream({ phase: ev.id, agent: ev.agent });
@@ -330,7 +381,7 @@ function renderPhaseError(ev) {
   const d = divs[divs.length - 1];
   if (d) {
     d.dataset.state = "error";
-    $(".fp-status", d).textContent = "✕ failed";
+    $(".fp-status", d).textContent = "failed";
   }
   const bubble = state.streaming;
   if (bubble && bubble.phase === ev.id) finalizeStream({ phase: ev.id, agent: ev.agent });
@@ -374,7 +425,7 @@ function renderTool(ev) {
     try { a = JSON.stringify(ev.args); } catch { a = String(ev.args); }
     pill.appendChild(el("span", "tp-args", escapeHtml(a)));
   }
-  const stTxt = ev.status === "call" ? "→" : (ev.isError ? "✕" : "✓");
+  const stTxt = ev.status === "call" ? "call" : (ev.isError ? "error" : "ok");
   pill.appendChild(el("span", "tp-st", stTxt));
   feedInner().appendChild(pill);
   scrollIfNeeded();
@@ -435,6 +486,7 @@ function renderPhaseStrip() {
     cell.appendChild(el("div", "pc-agent", p.agent + " · " + p.label.toLowerCase()));
     strip.appendChild(cell);
   });
+  setPipelineProgress(PHASE_ORDER.filter((id) => state.phases[id] === "done").length);
 }
 
 function renderRoster() {
@@ -450,7 +502,11 @@ function renderRoster() {
     info.appendChild(el("b", "", role.name));
     info.appendChild(el("span", "", role.title));
     item.appendChild(info);
-    item.appendChild(el("span", "rt", st === "done" ? "✓" : st === "active" ? "●" : st === "error" ? "✕" : ""));
+    const rt = el("span", "rt", "");
+    if (st === "done") rt.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    else if (st === "error") rt.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+    else if (st === "active") rt.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>';
+    item.appendChild(rt);
     box.appendChild(item);
   });
 }
@@ -462,7 +518,10 @@ function renderChecklist() {
     const st = state.phases[p.id] || "pending";
     const c = el("div", "chk", "");
     c.dataset.state = st;
-    c.appendChild(el("span", "box", st === "done" ? "✓" : st === "error" ? "✕" : ""));
+    const bx = el("span", "box", "");
+    if (st === "done") bx.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    else if (st === "error") bx.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+    c.appendChild(bx);
     c.appendChild(el("span", "", p.label));
     box.appendChild(c);
   });
@@ -615,14 +674,108 @@ function loadPreview(id) {
   $("#preview-frame").src = "/preview/" + id + "/?t=" + Date.now();
 }
 
+async function loadHistory() {
+  const box = $("#history-list");
+  box.innerHTML = '<div class="empty-state">Loading history…</div>';
+  try {
+    const res = await fetch("/api/crews");
+    const list = await res.json();
+    list.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    if (!list.length) {
+      box.innerHTML = '<div class="empty-state">No crews yet. Launch your first build!</div>';
+      return;
+    }
+    box.innerHTML = list.map((ws) => {
+      const when = (ws.createdAt || "").replace("T", " ").slice(0, 16);
+      const dur = ws.status === "done" && ws.startedAt && ws.finishedAt
+        ? ((new Date(ws.finishedAt) - new Date(ws.startedAt)) / 1000).toFixed(0) + "s"
+        : "";
+      const statusHtml = '<span class="st" data-state="' + (ws.status || "idle") + '"></span>';
+      const template = ws.template ? `<span class="tag">${ws.template}</span>` : "";
+      return `
+        <button class="history-item" data-id="${ws.id}">
+          <div class="hi-main">
+            <b>${escapeHtml(ws.product || ws.idea)}</b>
+            <span class="hi-meta">${statusHtml} ${escapeHtml(ws.idea || "").slice(0, 70)} · ${when} · ${ws.mode || "rehearsal"} ${template} ${dur ? "· " + dur : ""}</span>
+          </div>
+          <div class="hi-actions">
+            <button class="mini-btn hi-open" title="Open workspace"><svg><use href="#i-fork"/></svg></button>
+            <button class="mini-btn hi-export" title="Export config"><svg><use href="#i-dl"/></svg></button>
+          </div>
+        </button>
+      `;
+    }).join("");
+    // attach click handlers
+    $$("#history-list .hi-open").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.closest(".history-item").dataset.id;
+        openWorkspace(id);
+      });
+    });
+    $$("#history-list .hi-export").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const id = btn.closest(".history-item").dataset.id;
+        await exportCrew(id);
+      });
+    });
+    $$("#history-list .history-item").forEach((item) => {
+      item.addEventListener("click", () => openWorkspace(item.dataset.id));
+    });
+  } catch {
+    box.innerHTML = '<div class="empty-state">Failed to load history</div>';
+  }
+}
+
+async function exportCrew(id) {
+  try {
+    const res = await fetch("/api/crews/" + id + "/export");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "export failed");
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "crew-" + id + ".json";
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert("Export failed: " + err.message);
+  }
+}
+
+async function importCrew(file) {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    // Validate required fields
+    if (!data.idea) throw new Error("Invalid crew config: missing idea");
+    // Pre-fill the launch form
+    $("#idea").value = data.idea;
+    const stackBtn = $("#stack-chips .chip-btn[data-stack='" + (data.stack || "static") + "']");
+    if (stackBtn) stackBtn.click();
+    const templateBtn = $("#template-chips .chip-btn[data-template='" + (data.template || "static") + "']");
+    if (templateBtn) templateBtn.click();
+    const modeBtn = $("#mode-toggle .mode-btn[data-mode='" + (data.mode || "rehearsal") + "']");
+    if (modeBtn) modeBtn.click();
+    $("#speed").value = data.speed || 2;
+    $("#speed-label").textContent = (data.speed || 2) + "×";
+    alert("Crew config imported! Adjust settings and click Launch crew.");
+  } catch (err) {
+    alert("Import failed: " + err.message);
+  }
+}
+
 /* ── tabs ── */
 function setTab(t) {
   state.tab = t;
   $$(".tab").forEach((x) => x.classList.toggle("active", x.dataset.tab === t));
-  ["repo", "git", "preview"].forEach((x) => $("#tab-" + x).classList.toggle("hidden", x !== t));
+  ["repo", "git", "preview", "history"].forEach((x) => $("#tab-" + x).classList.toggle("hidden", x !== t));
   if (t === "git") loadLog();
   if (t === "repo") { $("#tree").classList.remove("hidden"); $("#fileview").classList.add("hidden"); }
   if (t === "preview" && state.ws) loadPreview(state.ws.id);
+  if (t === "history") loadHistory();
 }
 
 /* ── settings ── */
@@ -710,7 +863,7 @@ function bindSettings() {
       const r = await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!r.ok) throw new Error("save failed");
       const sel = settingsCatalog.find((m) => m.key === modelKey);
-      $("#settings-status").textContent = "saved ✓ live crews run on " + (sel ? sel.name : "custom endpoint") +
+      $("#settings-status").textContent = "saved — live crews run on " + (sel ? sel.name : "custom endpoint") +
         (fallback ? " · fallback on" : " · fallback off");
       $("#set-key").value = "";
     } catch (err) {
@@ -738,6 +891,7 @@ function bindStatic() {
     switchView("landing");
   });
   $("#tree-refresh").addEventListener("click", () => { loadTree(); loadLog(); });
+  $("#history-refresh").addEventListener("click", () => { loadHistory(); });
   $("#file-close").addEventListener("click", () => {
     $("#fileview").classList.add("hidden");
     $("#tree").classList.remove("hidden");
@@ -752,6 +906,8 @@ function bindStatic() {
     state.events = [];
     state.phases = {};
     state.streaming = null;
+    state.stepCounts = {};
+    setPipelineProgress(0);
     $("#feed").innerHTML = '<div class="feed-inner" id="feed-inner"></div>';
     renderPhaseStrip();
     renderRoster();
@@ -763,6 +919,7 @@ function bindStatic() {
 
 /* ── init ── */
 function init() {
+  bindTheme();
   bindStatic();
   setupLanding();
   renderRecent();

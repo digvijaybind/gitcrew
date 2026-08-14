@@ -83,8 +83,10 @@ function saveSettings(s) {
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(s, null, 2));
 }
 
-function templateDir() {
-  return TEMPLATE;
+function templateDir(template = "static") {
+  const tpl = path.join(TEMPLATE, "templates", template);
+  if (fs.existsSync(tpl)) return tpl;
+  return TEMPLATE; // fallback to root for backward compat
 }
 
 module.exports = {

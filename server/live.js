@@ -17,33 +17,44 @@ function read(p) {
   }
 }
 
-const PHASE_PROMPTS = {
-  brief: (idea, name) =>
-    `You are the CEO of this company repo. The customer brief is in PROJECT.md.\n\nIdea: ${idea}\n\nWrite BRIEF.md at the repo root: restate the idea in plain words, name the one outcome that must work, and set 2-3 boundaries. Then run the checkpoint tool.`,
-  plan: (idea, name) =>
-    `You are the product planner (pm). Read BRIEF.md and PROJECT.md. Produce PRD.md (problem, users, experience, 3-6 sections, content plan, out of scope) and TASKS.md (ordered, verifiable checklist + "## Future" section). Checkpoint when done.`,
-  build: (idea, name) =>
-    `You are the engineer. Read PRD.md, TASKS.md and knowledge/PRODUCT_PLAYBOOK.md (the design system — obey it exactly). Build the product in app/ as a self-contained static site: app/index.html, app/styles.css, app/app.js. It must open by double-clicking app/index.html — no build step, no CDN, no dependencies. Make every promised interaction actually work in the browser. Update TASKS.md as you complete tasks. Use the commit tool after each meaningful milestone with a "build:" message.`,
-  review: (idea, name) =>
-    `You are QA. Read PRD.md, TASKS.md, and every file in app/. Verify completeness, correctness (follow every interaction path), copy (no placeholders), and playbook design compliance. Write REVIEW.md with a verdict and a findings table. Fix every finding you can directly in app/ (commit with "review:" prefix).`,
-  ship: (idea, name) =>
-    `You are the marketer/shippit. Read git log, PRD.md, TASKS.md, REVIEW.md. Write README.md (pitch, run instructions, what was built, the crew, status) and CHANGELOG.md (honest Added/Fixed bullets under ## [1.0.0]). Create the annotated tag v1.0.0.`,
-};
+function getPrompts(template) {
+  const isStatic = template === "static";
+  return {
+    brief: (idea) =>
+      `You are the CEO of this company repo. The customer brief is in PROJECT.md.\n\nIdea: ${idea}\n\nWrite BRIEF.md at the repo root: restate the idea in plain words, name the one outcome that must work, and set 2-3 boundaries. Then run the checkpoint tool.`,
+    plan: (idea) =>
+      `You are the product planner (pm). Read BRIEF.md and PROJECT.md. Produce PRD.md (problem, users, experience, 3-6 sections, content plan, out of scope) and TASKS.md (ordered, verifiable checklist + "## Future" section). Checkpoint when done.`,
+    build: (idea) => {
+      if (isStatic) {
+        return `You are the engineer. Read PRD.md, TASKS.md and knowledge/PRODUCT_PLAYBOOK.md (the design system — obey it exactly). Build the product in app/ as a self-contained static site: app/index.html, app/styles.css, app/app.js. It must open by double-clicking app/index.html — no build step, no CDN, no dependencies. Make every promised interaction actually work in the browser. Update TASKS.md as you complete tasks. Use the commit tool after each meaningful milestone with a "build:" message.`;
+      }
+      return `You are the engineer. Read PRD.md, TASKS.md and knowledge/PRODUCT_PLAYBOOK.md (the design system — obey it exactly). Build the product according to the template specification. Update TASKS.md as you complete tasks. Use the commit tool after each meaningful milestone with a "build:" message.`;
+    },
+    review: (idea) =>
+      `You are QA. Read PRD.md, TASKS.md, and every file in the product output directory. Verify completeness, correctness (follow every interaction path), copy (no placeholders), and playbook design compliance. Write REVIEW.md with a verdict and a findings table. Fix every finding you can directly in the product (commit with "review:" prefix).`,
+    ship: (idea) =>
+      `You are the marketer/shippit. Read git log, PRD.md, TASKS.md, REVIEW.md. Write README.md (pitch, run instructions, what was built, the crew, status) and CHANGELOG.md (honest Added/Fixed bullets under ## [1.0.0]). Create the annotated tag v1.0.0.${isStatic ? `\n\n**Deploy to GitHub Pages:** After tagging, push the app/ folder to the gh-pages branch:\n  git subtree push --prefix app origin gh-pages\nThis publishes the static site to https://<owner>.github.io/<repo>/` : ''}`,
+  };
+}
 
 async function createLiveEngine() {
   await loadSdk();
   const { query } = sdk;
 
   async function runPhaseOnce(phase, ctx, emit, model) {
-    const { repo, idea, settings } = ctx;
-    const tpl = store.templateDir();
+    const { repo, idea, settings, meta } = ctx;
+    const tpl = store.templateDir(meta.template);
     const agent = phase.agent;
+    const prompts = getPrompts(meta.template);
 
     const soul = read(path.join(tpl, "agents", agent, "SOUL.md"));
     const rules = read(path.join(tpl, "RULES.md"));
     const duties = read(path.join(tpl, "agents", agent, "agent.yaml"));
     const skill = read(path.join(tpl, "skills", phase.id, "SKILL.md"));
     const playbook = phase.id === "build" ? read(path.join(tpl, "knowledge", "PRODUCT_PLAYBOOK.md")) : "";
+
+    const isStatic = meta.template === "static";
+    const productPath = isStatic ? "app/" : "src/"; // adjust per template if needed
 
     const systemPrompt = [
       `You are ${agent} in a tiny product studio whose company lives in this git repo.`,
@@ -56,7 +67,8 @@ async function createLiveEngine() {
       playbook ? "## The design system (obey exactly)\n" + playbook : "",
       "## Workspace facts",
       `- Working directory: ${repo}`,
-      `- Product must live in ${repo}/app/ (self-contained static site: index.html, styles.css, app.js)`,
+      `- Template: ${meta.template}`,
+      `- Product output directory: ${repo}/${productPath}`,
       `- Plan/notes/artifacts go at the repo root as markdown`,
       `- Commit your work with the commit tool (message prefixed with the phase, e.g. "${phase.id}: ...")`,
       `- End the phase by running the checkpoint tool to commit memory`,
@@ -64,7 +76,7 @@ async function createLiveEngine() {
       .filter(Boolean)
       .join("\n\n");
 
-    const prompt = PHASE_PROMPTS[phase.id](idea);
+    const prompt = prompts[phase.id](idea);
 
     emit({
       type: "system",

@@ -413,7 +413,11 @@ async function createRehearsalEngine() {
           if (r.ok) emit({ type: "commit", hash: r.out, message: args.message, source: "tool" });
         }
         if (toolName === "checkpoint") {
-          const mem = fs.readFileSync(path.join(repo, "memory", "MEMORY.md"), "utf8");
+          const memDir = path.join(repo, "memory");
+          const memPath = path.join(memDir, "MEMORY.md");
+          fs.mkdirSync(memDir, { recursive: true });
+          if (!fs.existsSync(memPath)) fs.writeFileSync(memPath, "# MEMORY\n\n");
+          const mem = fs.readFileSync(memPath, "utf8");
           const stamp = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
           fs.writeFileSync(
             path.join(repo, "memory", "MEMORY.md"),

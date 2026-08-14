@@ -1,39 +1,77 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>gitcrew — a tiny dev company that lives in git</title>
-<meta name="description" content="Describe a product. A crew of git-native agents plans, builds, reviews and ships it into a real repo — every decision committed." />
+<meta name="description" content="Describe a product. A crew of git-native agents plans, builds, reviews and ships it into a real repo — every decision committed, the memory git log-able, the company forkable." />
+<meta name="theme-color" id="theme-color" content="#07090b" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="gitcrew — a tiny dev company that lives in git" />
+<meta property="og:description" content="Describe a product. A crew of git-native agents plans, builds, reviews and ships it into a real repo — every decision a commit." />
+<meta name="color-scheme" content="dark light" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='7' cy='8' r='4' fill='%235b8cff'/%3E%3Ccircle cx='25' cy='24' r='4' fill='%2343d9a3'/%3E%3Ccircle cx='25' cy='8' r='4' fill='%23ffb454'/%3E%3Cpath d='M11 8h6c6 0 8 4 8 10v2' stroke='%23e8ecf1' stroke-width='2.5' fill='none'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" />
 <link rel="stylesheet" href="/styles.css" />
+<script>/* set theme before paint to avoid flash */try{var t=localStorage.getItem("gitcrew-theme");if(!t)t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="dark";}</script>
 </head>
 <body>
-<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+<a class="skip-link" href="#main">Skip to content</a>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m0 0-6-6m6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-fork" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.4"/><circle cx="18" cy="5" r="2.4"/><circle cx="18" cy="19" r="2.4"/><path d="M8.4 5H12c4 0 6 2.2 6 6v5.6M12 5v0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm7.7 3.5a7.6 7.6 0 0 0-.1-1.2l2.1-1.6-2-3.4-2.5 1a7.6 7.6 0 0 0-2-1.2L14.9 3h-4l-.3 2.6a7.6 7.6 0 0 0-2 1.2l-2.5-1-2 3.4 2.1 1.6a7.6 7.6 0 0 0 0 2.4L4.1 14.8l2 3.4 2.5-1a7.6 7.6 0 0 0 2 1.2l.3 2.6h4l.3-2.6a7.6 7.6 0 0 0 2-1.2l2.5 1 2-3.4-2.1-1.6c.1-.4.1-.8.1-1.2Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
   <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5m0 0 6-6m-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4.5M4 13a8 8 0 0 0 14 4.5M20 4v4h-4M4 20v-4h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-brief" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-plan" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="i-build" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+  <symbol id="i-review" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="i-ship" viewBox="0 0 24 24"><path d="M16.5 9.4 7.5 4.21M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96 12 12.01l8.73-5.05M12 22.08V12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 12.5l2.5 2.5L16 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.4m0 14.2v2.4M2.5 12h2.4m14.2 0h2.4M5.3 5.3l1.7 1.7m10 10 1.7 1.7m0-13.4-1.7 1.7M7 17l-1.7 1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-git" viewBox="0 0 24 24"><path d="M9 17a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-4a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 11V6.5A3.5 3.5 0 0 1 12.5 3H15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-fork-2" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.4"/><circle cx="18" cy="5" r="2.4"/><circle cx="18" cy="19" r="2.4"/><path d="M8.4 5H12c4 0 6 2.2 6 6v5.6M12 5v0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="7" r="2.5"/><path d="M6 8.5v7m0 0C6 12 9 12 10.5 11 13 9.5 12 8 13.5 6.5 14.5 5.5 16 5.5 15.5 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-memory" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 9h16M4 14h16M9 5v14M15 5v14" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+  <symbol id="i-diff" viewBox="0 0 24 24"><path d="M4 5h10a3 3 0 0 1 3 3v3M4 19h10a3 3 0 0 0 3-3v-3m0 0 2 2-2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 8h1M7 12h1M7 16h1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
 </svg>
 
 <div class="app">
   <!-- ═══════════════ LANDING ═══════════════ -->
-  <section id="view-landing" class="view">
-    <nav class="topnav">
-      <a class="brand" href="/">
+  <section id="view-landing" class="view" aria-label="Landing">
+    <header class="topnav" role="banner">
+      <a class="brand" href="/" aria-label="gitcrew home">
         <svg class="brand-mark" aria-hidden="true"><use href="#i-fork"/></svg>
         <span>gitcrew</span>
         <span class="brand-beta">beta</span>
       </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#launch">Launch</a>
+        <a href="#how">How it works</a>
+        <a href="#why">Why</a>
+      </nav>
       <div class="topnav-right">
-        <span class="chip chip-live"><span class="dot dot-live"></span>agents as repos</span>
-        <button class="btn btn-ghost btn-sm" id="nav-settings"><svg><use href="#i-gear"/></svg>Settings</button>
+        <span class="chip chip-live"><span class="dot dot-live" aria-hidden="true"></span>agents as repos</span>
+        <button class="btn btn-ghost btn-icon theme-toggle" id="theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle light / dark theme">
+          <svg class="i-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+          <svg class="i-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-sm" id="nav-settings" type="button"><svg aria-hidden="true"><use href="#i-gear"/></svg>Settings</button>
       </div>
-    </nav>
+    </header>
 
     <header class="hero">
+      <div class="hero-orbs" aria-hidden="true">
+        <span class="orb orb-blue"></span>
+        <span class="orb orb-green"></span>
+        <span class="orb orb-amber"></span>
+      </div>
       <div class="hero-inner">
         <span class="eyebrow">GITAGENTPROTOCOL &nbsp;·&nbsp; AGENTS AS REPOS</span>
         <h1 class="hero-title">A tiny dev company<br/>that lives in <span class="grad">git</span>.</h1>
@@ -42,74 +80,92 @@
           QA, shippit — plans, builds, reviews and ships it into a real repo.
           Every decision is a commit. You can fork the company.
         </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#launch">Launch a crew <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <a class="btn btn-ghost" href="#how">See the pipeline</a>
+        </div>
         <div class="hero-demo">
-          <div class="demo-log" id="hero-log">
+          <div class="demo-log" id="hero-log" aria-hidden="true">
+            <div class="demo-log-bar">
+              <span class="dl-dots"><i></i><i></i><i></i></span>
+              <span class="dl-title">crew/main</span>
+            </div>
             <span class="dl-line"><b class="c-green">$</b> git log --oneline</span>
-            <span class="dl-line c-muted">b3f1a2e ship: v1.0.0 — changelog + tag</span>
-            <span class="dl-line c-muted">8c9d41f review: pass — 3 findings fixed</span>
-            <span class="dl-line c-muted">5e7f02a build: app v1 complete</span>
-            <span class="dl-line c-muted">4a2c8d1 plan: prd + tasks</span>
-            <span class="dl-line c-muted">d0f9e3b init: crew deployed</span>
+            <span class="dl-line c-green dl-hash">b3f1a2e <span class="c-muted">ship: v1.0.0 — changelog + tag</span></span>
+            <span class="dl-line c-green dl-hash">8c9d41f <span class="c-muted">review: pass — 3 findings fixed</span></span>
+            <span class="dl-line c-green dl-hash">5e7f02a <span class="c-muted">build: app v1 complete</span></span>
+            <span class="dl-line c-green dl-hash">4a2c8d1 <span class="c-muted">plan: prd + tasks</span></span>
+            <span class="dl-line c-green dl-hash">d0f9e3b <span class="c-muted">init: crew deployed</span></span>
           </div>
         </div>
       </div>
     </header>
 
-    <main class="launch-wrap">
-      <div class="launch card">
+    <main class="launch-wrap" id="main">
+      <div class="launch card" id="launch">
         <div class="launch-head">
           <h2>Launch a crew</h2>
           <p>Tell the company what to build. Watch it commit.</p>
         </div>
 
-        <form id="crew-form">
-          <label class="field">
-            <span class="field-label">Product idea</span>
-            <textarea id="idea" rows="3" maxlength="240" placeholder="e.g. a habit tracker that turns streaks into a shareable garden"></textarea>
-            <span class="field-hint mono" id="idea-count">0 / 240</span>
-          </label>
-
+        <form id="crew-form" novalidate>
           <div class="field">
-            <span class="field-label">Stack</span>
-            <div class="chips" id="stack-chips">
-              <button type="button" class="chip chip-btn active" data-stack="static">static</button>
-              <button type="button" class="chip chip-btn" data-stack="react">react</button>
-              <button type="button" class="chip chip-btn" data-stack="next">next</button>
-              <button type="button" class="chip chip-btn" data-stack="python">python</button>
-              <button type="button" class="chip chip-btn" data-stack="rust">rust</button>
-            </div>
+            <label class="field-label" for="idea">Product idea</label>
+            <textarea id="idea" name="idea" rows="3" maxlength="240" placeholder="e.g. a habit tracker that turns streaks into a shareable garden"></textarea>
+            <span class="field-hint mono" id="idea-count" aria-live="polite">0 / 240</span>
           </div>
+
+          <fieldset class="field">
+            <legend class="field-label">Stack</legend>
+            <div class="chips" id="stack-chips" role="group" aria-label="Choose stack">
+              <button type="button" class="chip-btn active" data-stack="static" aria-pressed="true">static</button>
+              <button type="button" class="chip-btn" data-stack="react" aria-pressed="false">react</button>
+              <button type="button" class="chip-btn" data-stack="next" aria-pressed="false">next</button>
+              <button type="button" class="chip-btn" data-stack="python" aria-pressed="false">python</button>
+              <button type="button" class="chip-btn" data-stack="rust" aria-pressed="false">rust</button>
+            </div>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend class="field-label">Template</legend>
+            <div class="chips" id="template-chips" role="group" aria-label="Choose template">
+              <button type="button" class="chip-btn active" data-template="static" aria-pressed="true" title="Dark premium static site (HTML/CSS/JS)">static</button>
+              <button type="button" class="chip-btn" data-template="api" aria-pressed="false" title="Fastify API with OpenAPI, JWT, SQLite, Docker">api</button>
+              <button type="button" class="chip-btn" data-template="extension" aria-pressed="false" title="Manifest V3 Chrome Extension (popup, background, content)">extension</button>
+              <button type="button" class="chip-btn" data-template="cli" aria-pressed="false" title="Commander.js CLI tool with config, prompts, binary">cli</button>
+            </div>
+          </fieldset>
 
           <div class="launch-row">
             <div class="field grow">
-              <span class="field-label">Mode</span>
-              <div class="mode-toggle" id="mode-toggle">
-                <button type="button" class="mode-btn active" data-mode="rehearsal">
+              <span class="field-label" id="mode-label">Mode</span>
+              <div class="mode-toggle" id="mode-toggle" role="group" aria-labelledby="mode-label">
+                <button type="button" class="mode-btn active" data-mode="rehearsal" aria-pressed="true">
                   <b>Rehearsal</b><span>no key · full pipeline</span>
                 </button>
-                <button type="button" class="mode-btn" data-mode="live">
+                <button type="button" class="mode-btn" data-mode="live" aria-pressed="false">
                   <b>Live</b><span>real LLM agents</span>
                 </button>
               </div>
             </div>
             <div class="field grow">
-              <span class="field-label">Crew speed</span>
+              <label class="field-label" for="speed">Crew speed</label>
               <div class="speed-wrap">
-                <input type="range" id="speed" min="1" max="4" step="1" value="2" />
-                <span class="mono" id="speed-label">2×</span>
+                <input type="range" id="speed" name="speed" min="1" max="4" step="1" value="2" aria-valuetext="2x" />
+                <span class="mono" id="speed-label" aria-hidden="true">2×</span>
               </div>
             </div>
           </div>
 
           <button type="submit" class="btn btn-primary btn-block" id="launch-btn">
             <span class="btn-label">Launch crew</span>
-            <svg class="btn-arrow"><use href="#i-arrow"/></svg>
+            <svg class="btn-arrow" aria-hidden="true"><use href="#i-arrow"/></svg>
           </button>
           <p class="launch-note">Rehearsal mode runs the full pipeline with no API key. Live mode uses your model from Settings.</p>
         </form>
       </div>
 
-      <aside class="recent">
+      <aside class="recent" aria-label="Recent crews">
         <div class="recent-head">
           <h3>Recent crews</h3>
         </div>
@@ -119,30 +175,65 @@
       </aside>
     </main>
 
-    <section class="how">
+    <section class="how" id="how">
       <div class="how-inner">
         <span class="eyebrow">THE WORKFLOW</span>
         <h2>One pipeline, five specialists,<br/>zero meetings.</h2>
         <div class="steps">
           <div class="step">
-            <div class="step-ico c-blue">◆</div>
+            <div class="step-num">01</div>
+            <div class="step-ico c-blue"><svg><use href="#i-brief"/></svg></div>
             <h3>Brief</h3><p>CEO reads the idea and locks the vision + boundaries.</p>
           </div>
           <div class="step">
-            <div class="step-ico c-blue">◈</div>
+            <div class="step-num">02</div>
+            <div class="step-ico c-blue"><svg><use href="#i-plan"/></svg></div>
             <h3>Plan</h3><p>PM writes the PRD and a checkable task list.</p>
           </div>
           <div class="step">
-            <div class="step-ico c-blue">⚒</div>
+            <div class="step-num">03</div>
+            <div class="step-ico c-blue"><svg><use href="#i-build"/></svg></div>
             <h3>Build</h3><p>Engineer implements the product in <code>app/</code>, committing per milestone.</p>
           </div>
           <div class="step">
-            <div class="step-ico c-blue">◉</div>
+            <div class="step-num">04</div>
+            <div class="step-ico c-blue"><svg><use href="#i-review"/></svg></div>
             <h3>Review</h3><p>QA audits against the plan, fixes what it finds.</p>
           </div>
           <div class="step">
-            <div class="step-ico c-green">▲</div>
+            <div class="step-num">05</div>
+            <div class="step-ico c-green"><svg><use href="#i-ship"/></svg></div>
             <h3>Ship</h3><p>Shippit writes README + changelog, cuts <code>v1.0.0</code>.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="why" id="why">
+      <div class="why-inner">
+        <span class="eyebrow">WHY AGENTS AS REPOS</span>
+        <h2>The company is the artifact.</h2>
+        <p class="why-sub">The build output isn't just a product — it's a git repo containing the company that built it, with every decision versioned, branchable and forkable.</p>
+        <div class="feature-grid">
+          <div class="feature">
+            <div class="feature-ico c-blue"><svg><use href="#i-fork-2"/></svg></div>
+            <h3>Fork the company</h3>
+            <p>Clone <code>crew-template/</code> and you own a company. Change <code>SOUL.md</code> and you change its personality.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-ico c-green"><svg><use href="#i-branch"/></svg></div>
+            <h3>Branch a build</h3>
+            <p>The whole pipeline can be forked per idea — separate products, shared company DNA.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-ico c-amber"><svg><use href="#i-memory"/></svg></div>
+            <h3>git log the memory</h3>
+            <p><code>memory/MEMORY.md</code> is appended and committed by every specialist via the checkpoint tool.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-ico c-green"><svg><use href="#i-diff"/></svg></div>
+            <h3>Diff the rules</h3>
+            <p>Rule changes are tracked like any code change — you can see exactly when and why the company evolved.</p>
           </div>
         </div>
       </div>
@@ -163,26 +254,34 @@
   </section>
 
   <!-- ═══════════════ WORKSPACE ═══════════════ -->
-  <section id="view-workspace" class="view hidden">
-    <nav class="ws-nav">
-      <button class="btn btn-ghost btn-sm" id="ws-back"><svg><use href="#i-back"/></svg>Home</button>
+  <section id="view-workspace" class="view hidden" aria-label="Workspace">
+    <nav class="ws-nav" aria-label="Workspace navigation">
+      <button class="btn btn-ghost btn-sm" id="ws-back" type="button"><svg aria-hidden="true"><use href="#i-back"/></svg>Home</button>
       <div class="ws-title">
         <div class="ws-name" id="ws-name">—</div>
         <div class="ws-idea mono" id="ws-idea">—</div>
       </div>
       <div class="ws-actions">
         <span class="chip" id="ws-mode">rehearsal</span>
-        <span class="chip" id="ws-branch"><span class="dot dot-branch"></span>main</span>
-        <span class="pill" id="ws-status"><span class="dot" id="ws-status-dot"></span><span id="ws-status-text">idle</span></span>
-        <button class="btn btn-ghost btn-sm" id="ws-settings"><svg><use href="#i-gear"/></svg></button>
-        <a class="btn btn-ghost btn-sm" id="ws-download" href="#" target="_blank" rel="noopener"><svg><use href="#i-dl"/></svg>Repo</a>
+        <span class="chip" id="ws-branch"><span class="dot dot-branch" aria-hidden="true"></span>main</span>
+        <span class="pill" id="ws-status" data-state="idle"><span class="dot" id="ws-status-dot" aria-hidden="true"></span><span id="ws-status-text">idle</span></span>
+        <button class="btn btn-ghost btn-icon theme-toggle" id="ws-theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle light / dark theme">
+          <svg class="i-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+          <svg class="i-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-sm" id="ws-settings" type="button" aria-label="Open settings"><svg aria-hidden="true"><use href="#i-gear"/></svg></button>
+        <a class="btn btn-ghost btn-sm" id="ws-download" href="#" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-dl"/></svg>Repo</a>
       </div>
     </nav>
 
-    <div class="phase-strip" id="phase-strip"></div>
+    <div class="phase-strip" id="phase-strip" role="list" aria-label="Pipeline progress"></div>
+    <div class="progress-wrap" aria-hidden="true">
+      <div class="progress-track"><div class="progress-fill" id="pipeline-fill"></div></div>
+      <span class="progress-label mono" id="pipeline-label">0 / 5 phases</span>
+    </div>
 
     <div class="ws-body">
-      <aside class="rail">
+      <aside class="rail" aria-label="Crew roster and checklist">
         <div class="rail-sec">
           <div class="rail-title">Crew</div>
           <div id="roster" class="roster"></div>
@@ -193,54 +292,62 @@
         </div>
       </aside>
 
-      <main class="feed" id="feed">
+      <main class="feed" id="feed" aria-live="polite" aria-label="Build stream">
         <div class="feed-placeholder" id="feed-placeholder">
-          <svg class="ph-fork"><use href="#i-fork"/></svg>
+          <svg class="ph-fork" aria-hidden="true"><use href="#i-fork"/></svg>
           <p>The crew is standing by. Hit <b>Launch crew</b> to start a build.</p>
         </div>
       </main>
 
-      <aside class="inspector">
-        <div class="tabs" id="tabs">
-          <button class="tab active" data-tab="repo">Repo</button>
-          <button class="tab" data-tab="git">Git</button>
-          <button class="tab" data-tab="preview">Preview</button>
+      <aside class="inspector" aria-label="Inspector">
+        <div class="tabs" id="tabs" role="tablist" aria-label="Inspector tabs">
+          <button class="tab active" data-tab="repo" role="tab" aria-selected="true">Repo</button>
+          <button class="tab" data-tab="git" role="tab" aria-selected="false">Git</button>
+          <button class="tab" data-tab="preview" role="tab" aria-selected="false">Preview</button>
+          <button class="tab" data-tab="history" role="tab" aria-selected="false">History</button>
         </div>
-        <div class="tab-body" id="tab-repo">
+        <div class="tab-body" id="tab-repo" role="tabpanel">
           <div class="tree-head mono">
             <span>crew @ <b id="tree-branch">main</b></span>
-            <button class="mini-btn" id="tree-refresh" title="refresh"><svg><use href="#i-refresh"/></svg></button>
+            <button class="mini-btn" id="tree-refresh" title="refresh" aria-label="Refresh repository tree"><svg><use href="#i-refresh"/></svg></button>
           </div>
           <div class="tree-wrap">
             <div id="tree" class="tree"></div>
             <div id="fileview" class="fileview hidden">
               <div class="fileview-head">
                 <span class="mono" id="file-path"></span>
-                <button class="mini-btn" id="file-close">✕</button>
+                <button class="mini-btn" id="file-close" aria-label="close file"><svg><use href="#i-x"/></svg></button>
               </div>
               <pre class="fileview-code"><code id="file-code"></code></pre>
             </div>
           </div>
         </div>
-        <div class="tab-body hidden" id="tab-git">
+        <div class="tab-body hidden" id="tab-git" role="tabpanel">
           <div id="gitlog" class="gitlog"></div>
         </div>
-        <div class="tab-body hidden" id="tab-preview">
+        <div class="tab-body hidden" id="tab-preview" role="tabpanel">
           <iframe id="preview-frame" class="preview-frame" title="product preview"></iframe>
+        </div>
+        <div class="tab-body hidden" id="tab-history" role="tabpanel">
+          <div class="history-head">
+            <h4>Crew History</h4>
+            <button class="btn btn-ghost btn-sm" id="history-refresh" type="button" aria-label="Refresh history"><svg><use href="#i-refresh"/></svg></button>
+          </div>
+          <div id="history-list" class="history-list"></div>
         </div>
       </aside>
     </div>
 
-    <div id="done-banner" class="done-banner hidden">
+    <div id="done-banner" class="done-banner hidden" role="status">
       <div class="done-inner">
-        <span class="done-mark">✦</span>
+        <span class="done-mark"><svg aria-hidden="true"><use href="#i-check-circle"/></svg></span>
         <div class="done-text">
           <b id="done-title">Product shipped.</b>
           <span class="mono" id="done-sub"></span>
         </div>
         <div class="done-actions">
-          <button class="btn btn-primary btn-sm" id="done-preview">Open preview</button>
-          <button class="btn btn-ghost btn-sm" id="done-rerun">Re-run build</button>
+          <button class="btn btn-primary btn-sm" id="done-preview" type="button">Open preview</button>
+          <button class="btn btn-ghost btn-sm" id="done-rerun" type="button">Re-run build</button>
           <a class="btn btn-ghost btn-sm" id="done-download" href="#">Download repo</a>
         </div>
       </div>
@@ -250,21 +357,21 @@
 
 <!-- settings modal -->
 <div class="modal-back hidden" id="settings-modal">
-  <div class="modal card">
+  <div class="modal card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
     <div class="modal-head">
-      <h3>LLM settings</h3>
-      <button class="mini-btn" id="modal-close">✕</button>
+      <h3 id="settings-title">LLM settings</h3>
+      <button class="mini-btn" id="modal-close" aria-label="close settings"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <p class="modal-p">Used by live-mode agents. Keys are stored server-side only and injected into the GitAgent SDK runtime. Rehearsal mode never needs a key.</p>
     <form id="settings-form">
       <div class="field">
-        <span class="field-label">Model</span>
+        <label class="field-label" for="set-modelkey">Model</label>
         <select id="set-modelkey"></select>
         <span class="field-hint mono" id="modelkey-hint"></span>
       </div>
 
-      <div class="field" id="set-baseurl-field">
-        <span class="field-label">Base URL <span class="mono hint">(OpenAI-compatible)</span></span>
+      <div class="field hidden" id="set-baseurl-field">
+        <label class="field-label" for="set-baseurl">Base URL <span class="mono hint">(OpenAI-compatible)</span></label>
         <input id="set-baseurl" type="text" placeholder="https://gateway.example.com/v1" />
         <div class="presets">
           <button type="button" class="mini-pill" data-base="http://89.34.219.53:20128/v1">Gateway 89.34.219.53</button>
@@ -273,18 +380,18 @@
         </div>
       </div>
 
-      <div class="field" id="set-custom-model-field">
-        <span class="field-label">Model id</span>
+      <div class="field hidden" id="set-custom-model-field">
+        <label class="field-label" for="set-model">Model id</label>
         <input id="set-model" type="text" placeholder="kr/qwen3-coder-next" />
       </div>
 
-      <div class="field" id="set-key-field">
-        <span class="field-label">API key <span class="mono hint">(empty for no-auth gateways)</span></span>
+      <div class="field hidden" id="set-key-field">
+        <label class="field-label" for="set-key">API key <span class="mono hint">(empty for no-auth gateways)</span></label>
         <input id="set-key" type="password" placeholder="sk-…" autocomplete="off" />
       </div>
 
       <div class="field toggle-row">
-        <label class="toggle">
+        <label class="toggle" for="set-fallback">
           <input type="checkbox" id="set-fallback" />
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
           <span class="toggle-label">
@@ -299,7 +406,7 @@
         <button type="submit" class="btn btn-primary btn-sm">Save</button>
       </div>
     </form>
-    <div class="modal-status mono" id="settings-status"></div>
+    <div class="modal-status mono" id="settings-status" aria-live="polite"></div>
   </div>
 </div>
 

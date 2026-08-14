@@ -136,12 +136,31 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (p === "/api/crews" && req.method === "POST") {
-    const body = await readBody(req);
-    if (!body.idea || !String(body.idea).trim()) return json(res, 400, { error: "idea is required" });
-    const id = crew.deployCrew({ idea: String(body.idea).trim(), stack: body.stack, mode: body.mode, speed: body.speed });
-    const meta = store.loadMeta(id);
-    crew.hub.emit(id, { type: "deployed", id, product: meta.product });
-    return json(res, 201, { id, ...meta });
+    return ok(async (req, res) => {
+      const body = await readBody(req);
+      if (!body.idea || !String(body.idea).trim()) return json(res, 400, { error: "idea is required" });
+      const id = crew.deployCrew({ idea: String(body.idea).trim(), stack: body.stack, mode: body.mode, speed: body.speed, template: body.template });
+      const meta = store.loadMeta(id);
+      crew.hub.emit(id, { type: "deployed", id, product: meta.product });
+      return json(res, 201, { id, ...meta });
+    })(req, res);
+  }
+
+  if (p === "/api/crews/import" && req.method === "POST") {
+    return ok(async (req, res) => {
+      const body = await readBody(req);
+      if (!body.idea || !String(body.idea).trim()) return json(res, 400, { error: "imported config must have an idea" });
+      const id = crew.deployCrew({
+        idea: String(body.idea).trim(),
+        stack: body.stack || "static",
+        mode: body.mode || "rehearsal",
+        speed: body.speed || 1,
+        template: body.template || "static",
+      });
+      const meta = store.loadMeta(id);
+      crew.hub.emit(id, { type: "deployed", id, product: meta.product });
+      return json(res, 201, { id, ...meta, imported: true });
+    })(req, res);
   }
 
   const m = p.match(/^\/api\/crews\/([0-9a-f]{8})(\/.*)?$/);
@@ -238,6 +257,23 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       return json(res, 500, { error: "could not create archive" });
+    }
+
+    if (rest === "/export" && req.method === "GET") {
+      const meta = store.loadMeta(id);
+      if (!meta) return json(res, 404, { error: "crew not found" });
+      // Include full config needed to recreate this crew
+      const exportData = {
+        idea: meta.idea,
+        stack: meta.stack,
+        template: meta.template,
+        mode: meta.mode,
+        speed: meta.speed,
+        modelKey: (store.loadSettings() || {}).modelKey,
+        fallback: (store.loadSettings() || {}).fallback,
+        exportedAt: new Date().toISOString(),
+      };
+      return json(res, 200, exportData);
     }
   }
 

@@ -5,6 +5,9 @@
 
 const CATALOG = [
 
+  // Qwen3.6-35B uncensored on llama.cpp (20.118.15.50) — tool-calling verified
+  { key: "qwen-20.118.15.50/qwen3.6-35b-uncensored", name: "qwen3.6-35b-uncensored", host: "20.118.15.50", model: "Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf", baseUrl: "http://20.118.15.50/v1", grade: "S", latency: 7.0, note: "35B uncensored · llama.cpp · tool-calling OK" },
+
   // S-grade endpoint (89.34.219.53) — validated, tool-calling OK
   { key: "s-89.34.219.53/kr-qwen3-coder-next", name: "kr/qwen3-coder-next", host: "89.34.219.53", model: "kr/qwen3-coder-next", baseUrl: "http://89.34.219.53:20128/v1", grade: "S", latency: 4.1, note: "benchmark 28/28 · 100%" },
   { key: "s-89.34.219.53/kiro-qwen3-coder-next", name: "kiro/qwen3-coder-next", host: "89.34.219.53", model: "kiro/qwen3-coder-next", baseUrl: "http://89.34.219.53:20128/v1", grade: "S", latency: 3.3, note: "benchmark 28/28 · 100%" },
@@ -62,7 +65,7 @@ function buildChain(settings, lastHealthyKey) {
 // Hosts that reject any non-empty Authorization header (or accept none) use
 // the "noauth" provider prefix, which the SDK patch turns into an empty bearer
 // token. Real keyed gateways keep "local" and rely on OPENAI_API_KEY.
-const NOAUTH_HOSTS = ["localhost", "89.34.219.53", "31.42.189.181"];
+const NOAUTH_HOSTS = ["localhost", "89.34.219.53", "31.42.189.181", "20.118.15.50"];
 function modelString(m) {
   const provider = NOAUTH_HOSTS.includes(m.host) ? "noauth" : "local";
   return `${provider}:${m.model}@${m.baseUrl}`;

@@ -24,13 +24,13 @@ function copyDir(src, dest, ignore = []) {
   }
 }
 
-function deployCrew({ idea, stack, mode, speed }) {
+function deployCrew({ idea, stack, mode, speed, template }) {
   const id = store.genId();
   const ws = store.wsDir(id);
   const repo = path.join(ws, "repo");
   store.ensureDir(ws);
 
-  copyDir(store.templateDir(), repo, [".git"]);
+  copyDir(store.templateDir(template), repo, [".git"]);
   fs.writeFileSync(
     path.join(repo, "PROJECT.md"),
     [
@@ -42,6 +42,9 @@ function deployCrew({ idea, stack, mode, speed }) {
       "## Stack",
       stack || "static (HTML/CSS/JS)",
       "",
+      "## Template",
+      template || "static",
+      "",
       "## Product path",
       "app/ — a self-contained static product that opens by double-clicking app/index.html.",
       "",
@@ -50,20 +53,24 @@ function deployCrew({ idea, stack, mode, speed }) {
     ].join("\n") + "\n"
   );
 
-  const memPath = path.join(repo, "memory", "MEMORY.md");
+  const memDir = path.join(repo, "memory");
+  fs.mkdirSync(memDir, { recursive: true });
+  const memPath = path.join(memDir, "MEMORY.md");
+  if (!fs.existsSync(memPath)) fs.writeFileSync(memPath, "# MEMORY\n\n");
   fs.appendFileSync(
     memPath,
-    "\n## Engagement\n- idea: " + idea.trim().replace(/\n/g, " ") + "\n- stack: " + (stack || "static") + "\n"
+    "\n## Engagement\n- idea: " + idea.trim().replace(/\n/g, " ") + "\n- stack: " + (stack || "static") + "\n- template: " + (template || "static") + "\n"
   );
 
   g.git(repo, ["init", "-q", "-b", "main"]);
   g.git(repo, [...g.identity, "add", "-A"]);
-  g.git(repo, [...g.identity, "commit", "-q", "-m", "init: crew deployed for “" + idea.slice(0, 48) + "”"]);
+  g.git(repo, [...g.identity, "commit", "-q", "-m", "init: crew deployed for “" + idea.slice(0, 48) + "” (template: " + (template || "static") + ")"]);
 
   const meta = {
     id,
     idea: idea.trim(),
     stack: stack || "static",
+    template: template || "static",
     mode: mode || "rehearsal",
     speed: speed || 1,
     status: "idle",
