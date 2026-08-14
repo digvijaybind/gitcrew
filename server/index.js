@@ -302,6 +302,7 @@ const server = http.createServer(async (req, res) => {
   if (p === "/api/settings" && req.method === "GET") {
     const s = store.loadSettings();
     const masked = { ...s, keys: Object.fromEntries(Object.entries(s.keys || {}).map(([k, v]) => [k, v ? "••••••" : ""])) };
+    if (masked.ghToken) masked.ghToken = "••••••••••••••••";
     masked.catalog = require("./models").CATALOG;
     return json(res, 200, masked);
   }

@@ -3,3 +3,4 @@ workspaces/
 *.tgz
 server/.pid
 server/settings.json
+site-live/

@@ -4,6 +4,7 @@ const g = require("./gitshim");
 const store = require("./store");
 const { createRehearsalEngine, productName } = require("./rehearsal");
 const { createLiveEngine } = require("./live");
+const { publish } = require("./publish");
 
 const PHASES = [
   { id: "brief", label: "Brief", agent: "ceo", maxTurns: 8 },
@@ -30,7 +31,12 @@ function deployCrew({ idea, stack, mode, speed, template }) {
   const repo = path.join(ws, "repo");
   store.ensureDir(ws);
 
-  copyDir(store.templateDir(template), repo, [".git"]);
+  // Seed the repo with the full GAP structure (agent.yaml manifest, agents/,
+  // skills/, tools/, workflows/, config/, hooks/) so the live SDK can load it.
+  copyDir(store.TEMPLATE, repo, [".git", "templates"]);
+  // Overlay template-specific files (design system, engineer soul, etc.)
+  const tpl = store.templateDir(template);
+  if (tpl !== store.TEMPLATE) copyDir(tpl, repo, [".git"]);
   fs.writeFileSync(
     path.join(repo, "PROJECT.md"),
     [
@@ -166,6 +172,9 @@ async function runCrew(id) {
       preview: "/preview/" + id + "/",
       product: meta.product,
     });
+
+    // Auto-publish the finished product to the live GitHub Pages site.
+    await publish({ emit });
 
     meta.status = "done";
     meta.phase = null;
