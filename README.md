@@ -15,6 +15,12 @@ the agent IS a repo. `SOUL.md`, `RULES.md`, `memory/`, `agents/`, `skills/`,
 
 ![workspace](docs/shots/workspace.png)
 
+## Demo
+
+> **Watch it build itself:** [gitcrew-demo.webm](docs/gitcrew-demo.webm) — a fresh
+> idea is launched, a crew of agents plans/builds/reviews/ships it, the product
+> preview opens, and the finished site goes live on GitHub Pages.
+
 ## Screenshots
 
 | The app — launch a build | The crew at work |
