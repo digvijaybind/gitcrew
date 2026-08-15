@@ -1,133 +1,82 @@
-(function() {
-  'use strict';
+// gitcrew dashboard demo — live simulated metrics, fully interactive.
+(function () {
+  "use strict";
+  document.addEventListener("DOMContentLoaded", function () {
+    var chart = document.getElementById("chart");
+    var rows = document.getElementById("rows");
+    var sActive = document.getElementById("s-active");
+    var sTotal = document.getElementById("s-total");
+    var sAvg = document.getElementById("s-avg");
+    var sStatus = document.getElementById("s-status");
+    var rangeBtn = document.getElementById("range-btn");
+    var refreshBtn = document.getElementById("refresh-btn");
 
-  document.addEventListener('DOMContentLoaded', function() {
+    var events = ["view", "click", "signup", "render", "fetch", "commit", "deploy"];
+    var sources = ["web", "api", "crew", "worker", "cli"];
+    var bars = [];
+    var total = 0;
+    var history = [];
 
-    // --- Mobile hamburger menu ---
-    var toggle = document.getElementById('navToggle');
-    var navLinks = document.getElementById('navLinks');
+    function rand(n) { return Math.floor(Math.random() * n); }
 
-    if (toggle && navLinks) {
-      toggle.addEventListener('click', function() {
-        var isOpen = navLinks.classList.toggle('open');
-        toggle.classList.toggle('active');
-        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      });
-
-      // Close menu when a link is clicked
-      navLinks.querySelectorAll('a').forEach(function(link) {
-        link.addEventListener('click', function() {
-          navLinks.classList.remove('open');
-          toggle.classList.remove('active');
-          toggle.setAttribute('aria-expanded', 'false');
-        });
+    function initBars() {
+      for (var i = 0; i < 24; i++) bars.push(30 + rand(170));
+    }
+    function drawChart() {
+      chart.innerHTML = "";
+      bars.forEach(function (h) {
+        var b = document.createElement("div");
+        b.className = "bar";
+        b.style.height = h + "px";
+        chart.appendChild(b);
       });
     }
 
-    // --- Smooth scroll for anchor links ---
-    document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
-      anchor.addEventListener('click', function(e) {
-        var targetId = this.getAttribute('href');
-        if (targetId === '#') return;
-        var target = document.querySelector(targetId);
-        if (target) {
-          e.preventDefault();
-          var navHeight = 64;
-          var top = target.getBoundingClientRect().top + window.pageYOffset - navHeight;
-          window.scrollTo({ top: top, behavior: 'smooth' });
-        }
-      });
+    function pushEvent() {
+      total += 1;
+      var ev = events[rand(events.length)];
+      var src = sources[rand(sources.length)];
+      var val = ev === "click" ? 1 + rand(40) : ev === "view" ? 5 + rand(120) : 1 + rand(20);
+      var now = new Date();
+      var ts = now.toISOString().slice(11, 19);
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td><span class='tag'>" + ev + "</span></td>" +
+        "<td class='mono'>" + src + "</td>" +
+        "<td class='mono'>+" + val + "</td>" +
+        "<td class='mono'>" + ts + "</td>";
+      rows.prepend(tr);
+      while (rows.children.length > 8) rows.removeChild(rows.lastChild);
+
+      bars.shift();
+      bars.push(30 + rand(170));
+      drawChart();
+      history.push(val);
+      if (history.length > 24) history.shift();
+      var sum = history.reduce(function (a, b) { return a + b; }, 0);
+      sTotal.textContent = total;
+      sActive.textContent = 3 + rand(28);
+      sAvg.textContent = (12 + rand(88)) + "ms";
+    }
+
+    function step() {
+      pushEvent();
+      setTimeout(step, 1500 + rand(2500));
+    }
+
+    initBars();
+    drawChart();
+    sTotal.textContent = "0";
+    sActive.textContent = "—";
+    sAvg.textContent = "—";
+    sStatus.textContent = "building";
+    setTimeout(step, 800);
+
+    refreshBtn.addEventListener("click", pushEvent);
+    rangeBtn.addEventListener("click", function () {
+      var opts = ["Last 7 days", "Last 24 hours", "Live"];
+      var cur = opts.indexOf(rangeBtn.textContent.replace(" ▾", ""));
+      rangeBtn.textContent = opts[(cur + 1) % opts.length] + " ▾";
     });
-
-    // --- Scroll reveal observer ---
-    var revealElements = document.querySelectorAll('.reveal');
-    if (revealElements.length > 0) {
-      var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.15 });
-
-      revealElements.forEach(function(el) { observer.observe(el); });
-    }
-
-    // --- Savings calculator demo widget ---
-    var calcBtn = document.getElementById('demoCalc');
-    var demoResult = document.getElementById('demoResult');
-
-    if (calcBtn) {
-      calcBtn.addEventListener('click', function() {
-        var amount = parseFloat(document.getElementById('demoAmount').value) || 0;
-        var months = parseInt(document.getElementById('demoMonths').value) || 0;
-        var current = parseFloat(document.getElementById('demoCurrent').value) || 0;
-
-        if (months <= 0) return;
-
-        var target = amount * months;
-        var remaining = Math.max(0, target - current);
-        var perMonth = remaining / months;
-
-        document.getElementById('resultTarget').textContent = '$' + formatNumber(target);
-        document.getElementById('resultMonthly').textContent = '$' + formatNumber(Math.round(perMonth * 100) / 100);
-
-        var percent = Math.min(100, Math.max(0, (current / target) * 100));
-        document.getElementById('progressPercent').textContent = percent.toFixed(1) + '%';
-        document.getElementById('progressFill').style.width = percent + '%';
-
-        var note = document.getElementById('resultNote');
-        if (current >= target) {
-          note.textContent = 'Great news! You\'ve already reached your goal!';
-        } else if (current > 0) {
-          note.textContent = 'At this rate, you\'re on track to reach your goal in ' + months + ' months.';
-        } else {
-          note.textContent = 'Start saving today and watch your progress grow.';
-        }
-
-        demoResult.style.display = 'block';
-      });
-    }
-
-    // --- CTA form ---
-    var ctaForm = document.getElementById('ctaForm');
-    var ctaFeedback = document.getElementById('ctaFeedback');
-    var ctaBtn = document.getElementById('ctaBtn');
-
-    if (ctaForm) {
-      ctaForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        var emailInput = document.getElementById('ctaEmail');
-        var email = emailInput.value.trim();
-
-        // Basic email validation
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          ctaFeedback.textContent = 'Please enter a valid email address.';
-          ctaFeedback.className = 'cta-feedback error';
-          ctaFeedback.style.display = 'block';
-          return;
-        }
-
-        // Simulate submission
-        ctaBtn.textContent = 'Sending...';
-        ctaBtn.disabled = true;
-
-        setTimeout(function() {
-          ctaFeedback.textContent = 'You\'re in! Check your inbox for next steps.';
-          ctaFeedback.className = 'cta-feedback success';
-          ctaFeedback.style.display = 'block';
-          ctaBtn.textContent = 'Get Started Free';
-          ctaBtn.disabled = false;
-          emailInput.value = '';
-        }, 1200);
-      });
-    }
-
-    // --- Format number with commas ---
-    function formatNumber(num) {
-      return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
   });
 })();
