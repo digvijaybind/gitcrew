@@ -3,86 +3,87 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ProductCopper — The simplest way to product copper scrap.</title>
-<meta name="description" content="The simplest way to product copper scrap." />
+<title>TestLoader — The simplest way to test loader flow.</title>
+<meta name="description" content="The simplest way to test loader flow." />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-<header class="top">
-  <div class="container top-in">
-    <span class="brand">ProductCopper</span>
-    <button class="cart-btn" id="cart-btn">Cart · <b id="cart-count">0</b></button>
+<header class="hero">
+  <div class="container">
+    <nav>
+      <span class="brand">TestLoader</span>
+      <span class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#try">Try it</a>
+      </span>
+    </nav>
+    <div class="hero-inner fade-in">
+      <span class="eyebrow">testloader v1.0.0</span>
+      <h1>The simplest way to test loader flow.</h1>
+      <p class="lead">TestLoader turns “test loader flow” into something you can actually use. No setup, no learning curve — open it and it works, so you can focus on the part that matters: getting real results.</p>
+      <div class="cta">
+        <button class="btn btn-primary" data-cta>Get started free</button>
+        <button class="btn btn-ghost" data-scroll="#how">See how it works</button>
+      </div>
+      <p class="hint">No signup. No credit card. Ship in one sitting.</p>
+    </div>
   </div>
 </header>
 
-<section class="hero">
+<section id="features">
   <div class="container">
-    <span class="eyebrow">productcopper v1.0.0</span>
-    <h1>The simplest way to product copper scrap.</h1>
-    <p class="lead">ProductCopper turns “Build a product for copper scrap dealer over all 195+countries 
-
-along with copper all valueable minerals and scrap dealing platform 
-from there we can see price and quality
-
-along that build vendor platform where we can sell to companies t” into something you can actually use. No setup, no learning curve — open it and it works, so you can focus on the part that matters: getting real results.</p>
-    <div class="cta">
-      <button class="btn btn-primary" data-scroll="#shop">Browse the goods</button>
-      <button class="btn btn-ghost" data-scroll="#why">Why ProductCopper</button>
+    <span class="eyebrow">Capabilities</span>
+    <h2>Everything TestLoader does</h2>
+    <p class="lead">Four capabilities, one product — everything “test loader flow” actually needs.</p>
+    <div class="grid">
+      <div class="feature card"><span class="ico">◆</span><h3>Frictionless setup</h3><p>Open it and it works. There is no onboarding gauntlet.</p></div>
+      <div class="feature card"><span class="ico">◈</span><h3>Beautiful by default</h3><p>A dark, focused interface that stays out of your way.</p></div>
+      <div class="feature card"><span class="ico">✦</span><h3>Built to last</h3><p>Clean code, honest changelogs, and a crew that commits.</p></div>
     </div>
   </div>
 </section>
 
-<section id="shop" class="shop">
+<section id="how">
   <div class="container">
-    <span class="eyebrow">Shop</span>
-    <h2>Picks for you</h2>
-    <div class="grid" id="grid">
-      <div class="item card"><div class="thumb">✦</div><h3>ProductCopper Starter</h3><span class="price">$9</span><button class="btn btn-ghost add">Add to cart</button></div>
-      <div class="item card"><div class="thumb">◈</div><h3>ProductCopper Pro</h3><span class="price">$19</span><button class="btn btn-ghost add">Add to cart</button></div>
-      <div class="item card"><div class="thumb">▤</div><h3>ProductCopper Team</h3><span class="price">$39</span><button class="btn btn-ghost add">Add to cart</button></div>
-      <div class="item card"><div class="thumb">◆</div><h3>ProductCopper Max</h3><span class="price">$59</span><button class="btn btn-ghost add">Add to cart</button></div>
+    <span class="eyebrow">How it works</span>
+    <h2>From thought to shipped in minutes</h2>
+    <div class="steps">
+      <div class="step"><b>1</b><h3>Tell us what you need</h3><p>One sentence is enough to get going.</p></div>
+      <div class="step"><b>2</b><h3>TestLoader does the work</h3><p>The heavy lifting happens automatically, in real time.</p></div>
+      <div class="step"><b>3</b><h3>You take it from there</h3><p>Everything is yours to edit, extend, and own.</p></div>
     </div>
   </div>
 </section>
 
-<section id="why" class="why">
+<section id="try" class="try-section">
   <div class="container">
-    <span class="eyebrow">Why ProductCopper</span>
-    <h2>Buying, but better</h2>
-    <div class="perks">
-      <div class="perk"><b>◆</b><h3>Fast</h3><p>Checkout in seconds, not forms.</p></div>
-      <div class="perk"><b>◆</b><h3>Fair</h3><p>Honest prices. No dark patterns.</p></div>
-      <div class="perk"><b>◆</b><h3>Yours</h3><p>Every order tracked, every detail clear.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="checkout" id="checkout">
-  <div class="container">
-    <span class="eyebrow">Checkout</span>
-    <h2>Almost yours</h2>
-    <p class="lead">Your cart, in one line.</p>
-    <form class="checkout-form card" id="form">
-      <div class="form-row">
-        <label>Email
-          <input type="email" name="email" placeholder="you@example.com" required />
-        </label>
-        <label>Name
-          <input type="text" name="name" placeholder="Jane Doe" required />
-        </label>
+    <span class="eyebrow">Live demo</span>
+    <h2>Take TestLoader for a spin</h2>
+    <p class="lead">This is a real, working widget — not a screenshot.</p>
+    <div class="demo card" id="demo">
+      <div class="demo-output">—</div>
+      <div class="demo-actions">
+        <button class="btn btn-primary" id="demo-btn">Run again</button>
+        <button class="btn btn-ghost" id="demo-reset">Reset</button>
       </div>
-      <div class="form-actions">
-        <button class="btn btn-primary" type="submit">Place order</button>
-        <p class="form-msg mono" id="form-msg"></p>
-      </div>
-    </form>
+      <p class="demo-log mono" id="demo-log">Ready.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="container">
+    <h2>Ready when you are</h2>
+    <p class="lead">TestLoader turns “test loader flow” into something you can actually use. No setup, no learning curve — open it and it works, so you can focus on the part that matters: getting real results.</p>
+    <button class="btn btn-primary" data-cta>Start with TestLoader</button>
   </div>
 </section>
 
 <footer>
   <div class="container">
-    <span>ProductCopper — The simplest way to product copper scrap.</span>
+    <span>TestLoader — The simplest way to test loader flow.</span>
     <span class="mono">built by a crew · living in git · <a href="https://www.gitagent.sh/" target="_blank" rel="noopener">GitAgentProtocol</a></span>
   </div>
 </footer>

@@ -1,46 +1,47 @@
-// gitcrew storefront — working cart + checkout, no backend needed.
+// gitcrew landing demo widget — a real, working product demo.
 (function () {
   "use strict";
   document.addEventListener("DOMContentLoaded", function () {
-    var cartCount = document.getElementById("cart-count");
-    var grid = document.getElementById("grid");
-    var form = document.getElementById("form");
-    var formMsg = document.getElementById("form-msg");
-    var count = 0;
+    var demoBtn = document.getElementById("demo-btn");
+    var demoReset = document.getElementById("demo-reset");
+    var output = document.querySelector(".demo-output");
+    var log = document.getElementById("demo-log");
+    if (!demoBtn || !output || !log) return;
 
-    function updateCart(n) {
-      count += n;
-      cartCount.textContent = count;
+    var words = ["shipped", "built", "launched", "polished", "committed", "deployed"];
+    var ticks = 0;
+
+    function tick() {
+      ticks += 1;
+      var word = words[Math.floor(Math.random() * words.length)];
+      log.textContent = "log › " + word + " in " + (ticks * 0.4).toFixed(1) + "s · " + ticks + " iteration" + (ticks === 1 ? "" : "s");
+      output.textContent = word;
+      if (ticks < 8) {
+        setTimeout(tick, 240 + Math.random() * 220);
+      } else {
+        log.textContent = "log › done. " + ticks + " iterations in one sitting.";
+      }
     }
 
-    grid.addEventListener("click", function (e) {
-      var btn = e.target.closest(".add");
-      if (!btn) return;
-      updateCart(1);
-      var original = btn.textContent;
-      btn.textContent = "Added ✓";
-      btn.classList.add("btn-primary");
-      setTimeout(function () {
-        btn.textContent = original;
-        btn.classList.remove("btn-primary");
-      }, 900);
-    });
+    function reset() {
+      ticks = 0;
+      output.textContent = "—";
+      log.textContent = "Ready.";
+    }
 
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      var email = form.email.value.trim();
-      var name = form.name.value.trim();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-        formMsg.textContent = "That email doesn't look right.";
-        formMsg.classList.add("error");
-        return;
-      }
-      formMsg.classList.remove("error");
-      formMsg.textContent = "Order placed ✓ " + name + ", check your inbox for " + email;
-      form.reset();
-      setTimeout(function () { formMsg.textContent = ""; }, 6000);
+    demoBtn.addEventListener("click", function () {
+      if (ticks > 0 && ticks < 8) return;
+      output.textContent = "…";
+      setTimeout(tick, 300);
     });
+    demoReset.addEventListener("click", reset);
+    reset();
 
+    document.querySelectorAll("[data-cta]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        btn.textContent = "Done — check the repo ✦";
+      });
+    });
     document.querySelectorAll("[data-scroll]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var t = document.querySelector(btn.getAttribute("data-scroll"));
