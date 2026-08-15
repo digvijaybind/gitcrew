@@ -38,6 +38,67 @@ const state = {
 
 const PHASE_ORDER = ["brief", "plan", "build", "review", "ship"];
 
+/* ── launch loader ── */
+const LOADER_MSGS = [
+  "Reading the brief…",
+  "Assembling the crew…",
+  "Running the pipeline…",
+  "Agent is building your solution…",
+  "Committing progress…",
+];
+const LOADER_LOGS = [
+  "$ git init -b main",
+  "$ git add -A",
+  "$ git commit -m \"init: crew deployed\"",
+  "$ git checkout -b feature/product",
+  "$ git commit -m \"build: app v1\"",
+];
+let loaderTimer = null;
+let loaderMsgIx = 0;
+
+function showLaunchLoader(idea) {
+  $("#launch-loader").classList.remove("hidden");
+  const title = $("#launch-loader-title");
+  title.textContent = idea ? "Building “" + idea.slice(0, 34) + "”…" : "Agent is building your solution";
+  $("#loader-status").textContent = LOADER_MSGS[0];
+  $("#loader-fill").style.width = "0%";
+  $("#loader-log").textContent = LOADER_LOGS[0];
+  $$("#loader-phases .lp").forEach((p) => p.classList.remove("active", "done"));
+  loaderMsgIx = 0;
+  $("#loader-phases .lp[data-p='brief']").classList.add("active");
+  clearInterval(loaderTimer);
+  loaderTimer = setInterval(() => {
+    loaderMsgIx = (loaderMsgIx + 1) % LOADER_MSGS.length;
+    $("#loader-status").textContent = LOADER_MSGS[loaderMsgIx];
+    const log = LOADER_LOGS[loaderMsgIx % LOADER_LOGS.length];
+    if (log) $("#loader-log").textContent = log;
+  }, 1800);
+  // Safety: never leave the loader stuck if SSE is slow to connect.
+  clearTimeout(loaderMsgIx + "safety");
+  window._loaderSafety = setTimeout(hideLaunchLoader, 18000);
+}
+
+function loaderStepPhase(phaseId) {
+  const i = PHASE_ORDER.indexOf(phaseId);
+  if (i < 0) return;
+  $$("#loader-phases .lp").forEach((p) => {
+    const pI = PHASE_ORDER.indexOf(p.dataset.p);
+    p.classList.toggle("done", pI < i);
+    p.classList.toggle("active", pI === i);
+  });
+  const fill = $("#loader-fill");
+  if (fill) fill.style.width = Math.min(100, ((i + 1) / PHASE_ORDER.length) * 100) + "%";
+  $("#loader-status").textContent = LOADER_MSGS[Math.min(LOADER_MSGS.length - 1, i + 2)];
+}
+
+function hideLaunchLoader() {
+  clearInterval(loaderTimer);
+  loaderTimer = null;
+  clearTimeout(window._loaderSafety);
+  window._loaderSafety = null;
+  $("#launch-loader").classList.add("hidden");
+}
+
 /* ── theme (dark / light) ── */
 function currentTheme() {
   return document.documentElement.dataset.theme === "light" ? "light" : "dark";
@@ -98,6 +159,7 @@ function setupLanding() {
     const speedVal = parseInt(speed.value, 10) || 2;
     const btn = $("#launch-btn");
     btn.disabled = true; btn.querySelector(".btn-label").textContent = "Deploying crew…";
+    showLaunchLoader(ideaText);
     try {
       const res = await fetch("/api/crews", {
         method: "POST",
@@ -108,6 +170,7 @@ function setupLanding() {
       if (!res.ok) throw new Error(data.error || "failed to create crew");
       openWorkspace(data.id);
     } catch (err) {
+      hideLaunchLoader();
       alert("Failed to launch: " + err.message);
     } finally {
       btn.disabled = false; btn.querySelector(".btn-label").textContent = "Launch crew";
@@ -256,13 +319,16 @@ function onEvent(ev) {
     case "status":
       setStatus(ev.state);
       if (ev.state === "done") showDoneBanner(null);
-      if (ev.state === "error") setStatus("error");
+      if (ev.state === "error") { hideLaunchLoader(); setStatus("error"); }
       if (ev.state === "running") $("#done-banner").classList.add("hidden");
       break;
     case "phase":
       state.phases[ev.id] = ev.status === "start" ? "active" : ev.status === "error" ? "error" : "done";
-      if (ev.status === "start") renderPhaseStart(ev);
-      else if (ev.status === "error") renderPhaseError(ev);
+      if (ev.status === "start") {
+        loaderStepPhase(ev.id);
+        if (!$("#launch-loader").classList.contains("hidden")) hideLaunchLoader();
+        renderPhaseStart(ev);
+      } else if (ev.status === "error") renderPhaseError(ev);
       else renderPhaseEnd(ev);
       renderPhaseStrip();
       renderRoster();

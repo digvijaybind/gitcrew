@@ -356,6 +356,28 @@
   </section>
 </div>
 
+<!-- launch loader overlay -->
+<div class="modal-back hidden" id="launch-loader" role="dialog" aria-modal="true" aria-labelledby="launch-loader-title" aria-describedby="loader-status">
+  <div class="loader-card card">
+    <div class="loader-brand" aria-hidden="true">
+      <div class="loader-ring"></div>
+      <div class="loader-ring loader-ring-2"></div>
+      <svg class="loader-fork"><use href="#i-fork"/></svg>
+    </div>
+    <h3 id="launch-loader-title">Agent is building your solution</h3>
+    <p class="loader-sub" id="loader-status">Reading the brief…</p>
+    <div class="loader-phases" id="loader-phases" aria-label="Pipeline phases">
+      <span class="lp" data-p="brief"><i></i>Brief</span>
+      <span class="lp" data-p="plan"><i></i>Plan</span>
+      <span class="lp" data-p="build"><i></i>Build</span>
+      <span class="lp" data-p="review"><i></i>Review</span>
+      <span class="lp" data-p="ship"><i></i>Ship</span>
+    </div>
+    <div class="loader-progress" aria-hidden="true"><div class="loader-fill" id="loader-fill"></div></div>
+    <div class="loader-log mono" id="loader-log" aria-hidden="true"></div>
+  </div>
+</div>
+
 <!-- settings modal -->
 <div class="modal-back hidden" id="settings-modal">
   <div class="modal card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
