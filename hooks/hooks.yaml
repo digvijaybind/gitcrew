@@ -1,0 +1,4 @@
+hooks:
+  pre_tool_use:
+    - script: log-tool.sh
+      description: Append tool usage to the session log
