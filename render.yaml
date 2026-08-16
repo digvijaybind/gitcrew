@@ -1,0 +1,22 @@
+# gitcrew — Render Blueprint (deploy via "New +" → "Blueprint" → this repo).
+# Free tier stays awake when /api/health is pinged at least every ~10 min.
+services:
+  - type: web
+    name: gitcrew
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 4173
+      - key: GH_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false

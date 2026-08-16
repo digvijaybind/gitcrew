@@ -1,0 +1,9 @@
+node_modules/
+workspaces/
+site-live/
+*.tgz
+server/settings.json
+server/.pid
+.git/
+.gitignore
+.dockerignore

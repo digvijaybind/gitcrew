@@ -127,6 +127,10 @@ const server = http.createServer(async (req, res) => {
   }
 
   // API
+  if (p === "/api/health" && req.method === "GET") {
+    return json(res, 200, { ok: true, app: "gitcrew", uptime: Math.round(process.uptime()), now: new Date().toISOString() });
+  }
+
   if (p === "/api/meta" && req.method === "GET") {
     return json(res, 200, { app: "gitcrew", version: "1.0.0", builtOn: "GitAgentProtocol (GAP)" });
   }
