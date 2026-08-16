@@ -1,6 +1,0 @@
-# default environment
-model:
-  provider: openai
-  model: gpt-4o-mini
-  temperature: 0.7
-tools: [cli, read, write, memory]
