@@ -119,6 +119,9 @@ async function ensureWorktree() {
     // Does origin already have a gh-pages branch?
     const refs = await sh(["ls-remote", "--heads", "origin", "gh-pages"], store.ROOT);
     if (refs) {
+      // Fresh containers have no local gh-pages branch — fetch it from origin
+      // (with a forced refspec so an existing branch is updated, not rejected).
+      await sh(["fetch", "origin", `+${BRANCH}:${BRANCH}`], store.ROOT);
       await sh(["worktree", "add", SITE_DIR, BRANCH], store.ROOT);
     } else {
       await sh(["worktree", "add", "--orphan", "-B", BRANCH, SITE_DIR], store.ROOT);

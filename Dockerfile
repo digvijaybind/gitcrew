@@ -17,6 +17,13 @@ RUN cd server && npm install --production=false
 # Everything else (web/, crew-template/, server code)
 COPY . .
 
+# The publish step needs /app to be a git repo with a remote, plus an identity
+# for commits (the Docker context excludes .git).
+RUN git init -q -b main . \
+    && git remote add origin https://github.com/digvijaybind/gitcrew.git \
+    && git config --global user.name "gitcrew crew" \
+    && git config --global user.email "crew@gitcrew.dev"
+
 ENV PORT=4173
 EXPOSE 4173
 
